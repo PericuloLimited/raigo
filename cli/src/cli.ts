@@ -17,6 +17,7 @@ import { compilePolicy } from './compiler';
 import { validatePolicy } from './validator';
 import { loadPolicy } from './loader';
 import { INIT_TEMPLATE } from './templates';
+import { runSetupWizard } from './wizard';
 
 const pkg = require('../package.json');
 
@@ -171,6 +172,16 @@ program
       console.error(chalk.red(`  ✗ Parse error: ${err.message}`));
       process.exit(1);
     }
+  });
+
+// ── setup (interactive wizard) ───────────────────────────────────────────────
+program
+  .command('setup')
+  .description('Interactive setup wizard — create your first .raigo policy file with pre-built templates')
+  .option('--no-banner', 'Suppress the RAIGO banner')
+  .action(async (options: any) => {
+    if (options.banner !== false) printBanner();
+    await runSetupWizard();
   });
 
 // ── init ──────────────────────────────────────────────────────────────────────

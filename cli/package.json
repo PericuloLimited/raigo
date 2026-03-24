@@ -11,7 +11,16 @@
     "dev": "ts-node src/cli.ts",
     "test": "node dist/cli.js compile examples/iso27001_healthcare.raigo --all && echo 'Test passed'"
   },
-  "keywords": ["ai", "governance", "policy", "security", "raigo", "periculo", "guardrails", "compliance"],
+  "keywords": [
+    "ai",
+    "governance",
+    "policy",
+    "security",
+    "raigo",
+    "periculo",
+    "guardrails",
+    "compliance"
+  ],
   "author": "Periculo Limited <hello@periculo.co.uk>",
   "license": "MIT",
   "homepage": "https://raigo.periculo.co.uk",
@@ -23,8 +32,10 @@
     "url": "https://github.com/PericuloLimited/raigo/issues"
   },
   "dependencies": {
+    "@types/inquirer": "^8.2.12",
     "chalk": "^5.3.0",
     "commander": "^12.1.0",
+    "inquirer": "^8.2.7",
     "js-yaml": "^4.1.0",
     "ora": "^8.0.1"
   },
