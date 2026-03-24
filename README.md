@@ -3,7 +3,7 @@
 **The declarative standard for AI agent governance.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/periculo/raigo)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/PericuloLimited/raigo)
 
 ---
 
@@ -60,7 +60,7 @@ A single `policy.raigo` file compiles into:
 ## Quick Start
 
 ### Using the Web Generator (No Code)
-Visit [raigo.periculo.com](https://raigo.periculo.com), paste your corporate policy, and download your compiled `.raigo` file instantly.
+Visit [raigo.periculo.co.uk](https://raigo.periculo.co.uk), paste your corporate policy, and download your compiled `.raigo` file instantly.
 
 ### Using the CLI
 ```bash
@@ -108,10 +108,10 @@ RAIGO is an open standard. Contributions to the schema, the compiler, and the ex
 
 Managing `.raigo` files across dozens of repositories and AI tools? **Periculo Enterprise Control Plane** provides centralised policy management, automatic sync to connected tools, and a full audit trail.
 
-[Book a free 15-minute AI Governance Review →](https://periculo.com/book)
+[Book a free 15-minute AI Governance Review →](https://periculo.co.uk/book)
 
 ---
 
 ## License
 
-MIT © [Periculo Security](https://periculo.com)
+MIT © [Periculo Security](https://periculo.co.uk)

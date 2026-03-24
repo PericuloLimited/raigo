@@ -1,6 +1,6 @@
 # Contributing to RAIGO
 
-Thank you for your interest in contributing to the RAIGO open standard. This project is maintained by [Periculo Security](https://periculo.com) and is open to contributions from the community.
+Thank you for your interest in contributing to the RAIGO open standard. This project is maintained by [Periculo Security](https://periculo.co.uk) and is open to contributions from the community.
 
 ## How to Contribute
 
