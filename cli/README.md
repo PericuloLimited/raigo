@@ -1,6 +1,6 @@
 # RAIGO CLI
 
-**by Periculo** — [raigo.periculo.co.uk](https://raigo.periculo.co.uk)
+**by Periculo** — [raigo.ai](https://raigo.ai)
 
 The official command-line tool for the RAIGO declarative AI governance standard. Define your policies once in a `.raigo` file. Compile to every AI tool.
 
@@ -194,7 +194,7 @@ See [CONTRIBUTING.md](../CONTRIBUTING.md)
 
 ## Support
 
-- Website: [raigo.periculo.co.uk](https://raigo.periculo.co.uk)
+- Website: [raigo.ai](https://raigo.ai)
 - Email: hello@periculo.co.uk
 - Issues: [github.com/PericuloLimited/raigo/issues](https://github.com/PericuloLimited/raigo/issues)
 

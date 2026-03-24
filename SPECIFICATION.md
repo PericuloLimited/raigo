@@ -3,7 +3,7 @@
 > The declarative standard for AI agent governance. Define your policies once. Compile to every AI tool.
 
 **Maintained by:** [Periculo](https://periculo.co.uk) | **Format:** `.raigo` | **Schema Version:** 2.0  
-**Website:** [raigo.periculo.co.uk](https://raigo.periculo.co.uk) | **Repository:** [github.com/PericuloLimited/raigo](https://github.com/PericuloLimited/raigo)
+**Website:** [raigo.ai](https://raigo.ai) | **Repository:** [github.com/PericuloLimited/raigo](https://github.com/PericuloLimited/raigo)
 
 ---
 

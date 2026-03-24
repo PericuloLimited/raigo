@@ -4,7 +4,7 @@
  * The declarative standard for AI agent governance.
  * Define your policies once. Compile to every AI tool.
  *
- * https://raigo.periculo.co.uk
+ * https://raigo.ai
  * https://github.com/PericuloLimited/raigo
  */
 
@@ -29,7 +29,7 @@ function printBanner() {
   console.log(chalk.bold.hex('#6600FF')('  ██╔══██╗██╔══██║██║██║   ██║██║   ██║'));
   console.log(chalk.bold.hex('#6600FF')('  ██║  ██║██║  ██║██║╚██████╔╝╚██████╔╝'));
   console.log(chalk.bold.hex('#6600FF')('  ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝ ╚═════╝  ╚═════╝'));
-  console.log(chalk.dim('  by Periculo — raigo.periculo.co.uk\n'));
+  console.log(chalk.dim('  by Periculo — raigo.ai\n'));
 }
 
 // ── Program ───────────────────────────────────────────────────────────────────

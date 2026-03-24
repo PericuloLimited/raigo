@@ -4,47 +4,32 @@ This document outlines the development roadmap for the RAIGO project. RAIGO is b
 
 ---
 
-## v1.0 — The Standard (Current)
+## v1.0 — The Standard & The Engine (Current)
 
-The foundation: a stable, well-specified file format and an intelligent compiler that generates native enforcement artifacts for the fragmented AI tool ecosystem.
+The foundation: a stable, well-specified file format, an intelligent compiler, and a lightweight runtime engine that provides WAF-like enforcement for AI traffic.
 
 **Delivered:**
 - `.raigo` format specification v2.0 with structured conditions, compliance mappings, severity levels, and platform overrides.
-- TypeScript/Node.js CLI (`@periculo/raigo`) with `compile`, `validate`, `init`, and `targets` commands.
+- TypeScript/Node.js CLI (`@periculo/raigo`) with interactive `setup` wizard, `compile`, `validate`, and `targets` commands.
 - Compiler support for 9 native targets: Claude, ChatGPT, n8n, OpenClaw, Lovable, Gemini, Perplexity, Microsoft Copilot, and Audit Summary.
-- Runtime handler instructions embedded in every compiled output.
-- Structured violation response objects in every compiled output for programmatic error handling.
-- LLM-powered natural language ingestion (converts plain English policies to `.raigo` YAML).
-- Example policies for Healthcare (HIPAA), Defence (CMMC), and Startup use cases.
+- **RAIGO Engine:** A lightweight HTTP server that loads `.raigo` files and exposes `/v1/evaluate` for deterministic `ALLOW`/`DENY`/`WARN` decisions.
+- **OpenClaw Integration:** A drop-in skill that routes all OpenClaw agent actions through the RAIGO Engine.
+- Structured violation response objects in both compiled outputs and engine responses for programmatic error handling.
+- Example policies for Healthcare (HIPAA), Defence (CMMC), Finance (SOX), NHS (DSPT), and Startup use cases.
 
 ---
 
-## v1.x — Standard Improvements (Q2 2026)
+## v1.x — Standard & Engine Improvements (Q2/Q3 2026)
 
-Hardening and expanding the compiler and format based on community feedback.
+Hardening and expanding the ecosystem based on community feedback.
 
 - **Additional compiler targets:** Dify, Flowise, Vertex AI Agent Builder, AWS Bedrock Guardrails.
+- **More Engine Integrations:** Native SDKs for LangChain, AutoGen, and Vercel AI SDK.
 - **Policy inheritance and composition:** Allow a `.raigo` file to extend a base policy, enabling organizations to maintain a corporate baseline and layer department-specific overrides.
 - **VS Code Extension:** Syntax highlighting, schema validation, and live compilation preview for `.raigo` files.
 - **GitHub Action:** `raigo validate` and `raigo compile` as CI/CD steps, so policy changes are validated on every pull request.
-- **Policy Registry:** A public registry at `registry.raigo.periculo.co.uk` for sharing and discovering community-contributed policies.
-
----
-
-## v2.0 — The Engine (Q3 2026)
-
-The RAIGO Engine transforms RAIGO from a compile-time tool into a runtime policy decision point. This is the architectural shift that enables deterministic, WAF-like enforcement.
-
-**The Engine is a lightweight HTTP/gRPC server that:**
-- Loads a `.raigo` policy file at startup (or hot-reloads it on change).
-- Exposes a `/v1/evaluate` endpoint that accepts a prompt payload and returns a deterministic `ALLOW`, `DENY`, or `WARN` decision.
-- Returns a structured violation response object when a rule fires, including the rule ID, severity, user message, developer message, and audit fields.
-- Logs all decisions to a configurable audit sink (stdout, file, Elasticsearch, Splunk).
-
-**Deployment modes at v2.0:**
-- **Local binary:** A single executable (`raigo-engine`) that runs on macOS, Linux, and Windows. Ideal for local development and sidecar deployments alongside custom AI agents.
-- **Docker container:** `docker run periculo/raigo-engine` with a volume-mounted policy file.
-- **RAIGO Cloud:** The managed SaaS version of the engine, hosted by Periculo. Zero infrastructure, built-in analytics, and seamless integration with the Periculo Control Plane.
+- **Policy Registry:** A public registry at `registry.raigo.ai` for sharing and discovering community-contributed policies.
+- **Docker container:** `docker run periculo/raigo-engine` with a volume-mounted policy file for easier deployment.
 
 ---
 

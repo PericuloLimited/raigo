@@ -9,7 +9,7 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![npm](https://img.shields.io/npm/v/@periculo/raigo.svg)](https://www.npmjs.com/package/@periculo/raigo)
 
-[Documentation](https://raigo.periculo.co.uk) · [Specification](./SPECIFICATION.md) · [Architecture](./ARCHITECTURE.md) · [Examples](./examples/) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
+[Documentation](https://raigo.ai) · [Specification](./SPECIFICATION.md) · [Architecture](./ARCHITECTURE.md) · [Examples](./examples/) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
 
 </div>
 
@@ -149,7 +149,7 @@ const llmResponse = await openai.chat.completions.create({ ... });
 
 ### Using the Web Generator
 
-Visit [raigo.periculo.co.uk](https://raigo.periculo.co.uk) to generate a `.raigo` file from plain English using the LLM-powered ingestion tool.
+Visit [raigo.ai](https://raigo.ai) to generate a `.raigo` file from plain English using the LLM-powered ingestion tool.
 
 ---
 
