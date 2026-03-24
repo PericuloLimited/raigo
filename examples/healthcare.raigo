@@ -1,7 +1,8 @@
-version: "1.0"
+version: "1.1"
 organization: "Example Healthcare Trust"
 department: "Clinical Operations"
-last_updated: "2026-03-24T10:00:00Z"
+last_updated: "2026-03-24T00:00:00Z"
+framework: "HIPAA"
 
 context:
   environment: "production"
@@ -12,37 +13,67 @@ context:
     - "approved_document_store"
 
 policies:
+
   - id: "HIPAA-01"
     domain: "Data Privacy"
     condition: "Always"
     action: "DENY"
-    directives:
-      - "Never process, store, or transmit real patient names, dates of birth, NHS/insurance numbers, or diagnosis codes."
-      - "Do not send any patient data to external APIs or third-party services."
-      - "All patient references must use anonymised identifiers only."
-    enforcement_message: "Action blocked by HIPAA-01: This agent is not permitted to handle Protected Health Information (PHI). Please anonymise all patient data before proceeding."
+    directive: "Never process, store, or transmit real patient names, dates of birth, NHS/insurance numbers, or diagnosis codes."
+    enforcement_message: "Blocked by HIPAA-01: Processing Protected Health Information (PHI) is not permitted. Anonymise all patient data before proceeding."
 
   - id: "HIPAA-02"
+    domain: "Data Privacy"
+    condition: "Always"
+    action: "DENY"
+    directive: "Do not send any patient data to external APIs or third-party services."
+    enforcement_message: "Blocked by HIPAA-02: Transmitting patient data to external services is not permitted."
+
+  - id: "HIPAA-03"
+    domain: "Data Privacy"
+    condition: "When referencing patients in any context"
+    action: "ENFORCE"
+    directive: "All patient references must use anonymised identifiers only — never real names or identifiable details."
+
+  - id: "HIPAA-04"
     domain: "Data Access"
     condition: "If accessing patient records"
     action: "ENFORCE"
-    directives:
-      - "Only access patient records through the approved internal_ehr_api tool."
-      - "Log all data access events with a timestamp and purpose."
-      - "Apply minimum necessary access — retrieve only the specific fields required for the task."
+    directive: "Only access patient records through the approved internal_ehr_api tool."
+
+  - id: "HIPAA-05"
+    domain: "Data Access"
+    condition: "If accessing patient records"
+    action: "ENFORCE"
+    directive: "Log all data access events with a timestamp, the requesting user, and the stated purpose."
+
+  - id: "HIPAA-06"
+    domain: "Data Access"
+    condition: "If accessing patient records"
+    action: "ENFORCE"
+    directive: "Apply minimum necessary access — retrieve only the specific fields required for the task, not the full record."
 
   - id: "SEC-01"
-    domain: "Code Generation"
+    domain: "Secure Code Generation"
     condition: "Always"
+    action: "DENY"
+    directive: "Never hardcode credentials, API keys, or database connection strings in generated code."
+    enforcement_message: "Blocked by SEC-01: Hardcoded credentials are not permitted. Use environment variables."
+
+  - id: "SEC-02"
+    domain: "Secure Code Generation"
+    condition: "When generating database query code"
     action: "ENFORCE"
-    directives:
-      - "Never hardcode credentials, API keys, or connection strings."
-      - "All database queries must use parameterised inputs to prevent SQL injection."
+    directive: "All database queries must use parameterised inputs to prevent SQL injection."
 
   - id: "COM-01"
-    domain: "Communication"
+    domain: "Clinical Communication"
+    condition: "When generating patient-facing content"
+    action: "DENY"
+    directive: "Do not provide definitive medical diagnoses or treatment recommendations."
+    enforcement_message: "Blocked by COM-01: Providing medical diagnoses is outside the permitted scope of this agent."
+
+  - id: "COM-02"
+    domain: "Clinical Communication"
     condition: "When generating patient-facing content"
     action: "ENFORCE"
-    directives:
-      - "Do not provide definitive medical diagnoses or treatment recommendations."
-      - "Always include a disclaimer directing patients to consult a qualified clinician."
+    directive: "Always include a disclaimer directing patients to consult a qualified clinician for medical advice."

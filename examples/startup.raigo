@@ -1,7 +1,8 @@
-version: "1.0"
+version: "1.1"
 organization: "Example Startup"
 department: "All Teams"
-last_updated: "2026-03-24T10:00:00Z"
+last_updated: "2026-03-24T00:00:00Z"
+framework: "Internal Security Policy"
 
 context:
   environment: "production"
@@ -13,29 +14,61 @@ context:
     - "linear_api"
 
 policies:
+
   - id: "SEC-01"
-    domain: "Code Generation"
+    domain: "Secure Code Generation"
+    condition: "Always"
+    action: "DENY"
+    directive: "Never hardcode API keys, passwords, tokens, or secrets in generated code."
+    enforcement_message: "Blocked by SEC-01: Hardcoded secrets are not permitted. Use environment variables."
+
+  - id: "SEC-02"
+    domain: "Secure Code Generation"
     condition: "Always"
     action: "ENFORCE"
-    directives:
-      - "Never hardcode API keys, passwords, tokens, or secrets in generated code."
-      - "Always use environment variables for configuration secrets."
-      - "Sanitise all user inputs before passing them to database queries."
-      - "Do not commit secrets to version control."
+    directive: "Always use environment variables or a secrets manager for all configuration secrets."
+
+  - id: "SEC-03"
+    domain: "Secure Code Generation"
+    condition: "When generating code that processes user input"
+    action: "ENFORCE"
+    directive: "Sanitise all user inputs before passing them to database queries, shell commands, or external APIs."
+
+  - id: "SEC-04"
+    domain: "Secure Code Generation"
+    condition: "Always"
+    action: "DENY"
+    directive: "Do not commit secrets, credentials, or sensitive configuration to version control."
+    enforcement_message: "Blocked by SEC-04: Committing secrets to version control is not permitted."
 
   - id: "DP-01"
     domain: "Data Privacy"
     condition: "If handling user data"
+    action: "DENY"
+    directive: "Do not log or expose user email addresses, payment information, or personal details in debug output."
+    enforcement_message: "Blocked by DP-01: User PII must not appear in logs or debug output."
+
+  - id: "DP-02"
+    domain: "Data Privacy"
+    condition: "When working with user data in non-production environments"
     action: "ENFORCE"
-    directives:
-      - "Do not log or expose user email addresses, payment information, or personal details in debug output."
-      - "Anonymise user data in non-production environments."
+    directive: "Anonymise user data in non-production environments."
 
   - id: "COM-01"
     domain: "External Communication"
     condition: "When drafting customer-facing content"
     action: "ENFORCE"
-    directives:
-      - "Do not make pricing commitments or SLA guarantees without human approval."
-      - "Do not share unreleased product roadmap information."
-      - "Maintain a professional and friendly tone."
+    directive: "Do not make pricing commitments or SLA guarantees without explicit human approval."
+
+  - id: "COM-02"
+    domain: "External Communication"
+    condition: "When drafting customer-facing content"
+    action: "DENY"
+    directive: "Do not share unreleased product roadmap information externally."
+    enforcement_message: "Blocked by COM-02: Sharing unreleased roadmap information is not permitted."
+
+  - id: "COM-03"
+    domain: "External Communication"
+    condition: "When drafting customer-facing content"
+    action: "ENFORCE"
+    directive: "Maintain a professional and friendly tone in all customer communications."

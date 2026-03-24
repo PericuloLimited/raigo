@@ -1,7 +1,8 @@
-version: "1.0"
+version: "1.1"
 organization: "Example Defence Contractor"
 department: "Systems Engineering"
-last_updated: "2026-03-24T10:00:00Z"
+last_updated: "2026-03-24T00:00:00Z"
+framework: "CMMC Level 2"
 
 context:
   environment: "production"
@@ -12,38 +13,71 @@ context:
     - "internal_ticketing"
 
 policies:
+
   - id: "CMMC-01"
     domain: "Controlled Unclassified Information (CUI)"
     condition: "Always"
     action: "DENY"
-    directives:
-      - "Never transmit, store, or process Controlled Unclassified Information (CUI) outside of approved internal systems."
-      - "Do not use external cloud APIs, LLM endpoints, or third-party services for any task involving CUI."
-      - "All CUI must remain within the approved boundary defined in the allowed_tools list."
-    enforcement_message: "Action blocked by CMMC-01: CUI handling is restricted to approved internal systems only. This action would violate CMMC Level 2 requirements."
+    directive: "Never transmit, store, or process Controlled Unclassified Information (CUI) outside of approved internal systems."
+    enforcement_message: "Blocked by CMMC-01: CUI handling is restricted to approved internal systems only. This would violate CMMC Level 2 requirements."
 
   - id: "CMMC-02"
+    domain: "Controlled Unclassified Information (CUI)"
+    condition: "Always"
+    action: "DENY"
+    directive: "Do not use external cloud APIs, LLM endpoints, or third-party services for any task involving CUI."
+    enforcement_message: "Blocked by CMMC-02: External services are not permitted for CUI-related tasks."
+
+  - id: "CMMC-03"
+    domain: "Controlled Unclassified Information (CUI)"
+    condition: "Always"
+    action: "ENFORCE"
+    directive: "All CUI must remain within the approved boundary defined in the allowed_tools list."
+
+  - id: "AC-01"
+    domain: "Access Control"
+    condition: "Always"
+    action: "DENY"
+    directive: "Do not attempt to access systems, data, or resources outside the allowed_tools list."
+    enforcement_message: "Blocked by AC-01: Access to this resource is outside your authorised scope."
+
+  - id: "AC-02"
+    domain: "Access Control"
+    condition: "Always"
+    action: "DENY"
+    directive: "Do not attempt to escalate privileges or access systems beyond your authorised role."
+    enforcement_message: "Blocked by AC-02: Privilege escalation is not permitted."
+
+  - id: "AC-03"
     domain: "Access Control"
     condition: "Always"
     action: "ENFORCE"
-    directives:
-      - "Only access systems and data explicitly listed in the allowed_tools context."
-      - "Do not attempt to escalate privileges or access systems outside your authorised scope."
-      - "Log all tool calls with timestamps for audit trail compliance."
+    directive: "Log all tool calls with timestamps and context to maintain a full audit trail for CMMC compliance."
 
   - id: "SEC-01"
-    domain: "Code Generation"
+    domain: "Secure Code Generation"
     condition: "Always"
-    action: "ENFORCE"
-    directives:
-      - "Never hardcode credentials, API keys, or secrets in generated code."
-      - "All code must be reviewed by a human engineer before deployment to production."
-      - "Do not generate code that disables or bypasses security controls."
+    action: "DENY"
+    directive: "Never hardcode credentials, API keys, or secrets in generated code."
+    enforcement_message: "Blocked by SEC-01: Hardcoded secrets are not permitted. Use environment variables."
 
   - id: "SEC-02"
-    domain: "External Communication"
-    condition: "When sending data to external endpoints"
+    domain: "Secure Code Generation"
+    condition: "Before deploying any generated code to production"
+    action: "WARN"
+    directive: "All generated code must be reviewed and approved by a human engineer before deployment to production."
+    enforcement_message: "Warning (SEC-02): Human review is required before this code is deployed to production."
+
+  - id: "SEC-03"
+    domain: "Secure Code Generation"
+    condition: "Always"
     action: "DENY"
-    directives:
-      - "Do not send any project names, contract numbers, or technical specifications to external services."
-    enforcement_message: "Action blocked by SEC-02: External data transmission is not permitted for this environment."
+    directive: "Do not generate code that disables, bypasses, or weakens security controls or monitoring."
+    enforcement_message: "Blocked by SEC-03: Generating code that weakens security controls is not permitted."
+
+  - id: "EXT-01"
+    domain: "External Communication"
+    condition: "When sending data to any external endpoint"
+    action: "DENY"
+    directive: "Do not send project names, contract numbers, technical specifications, or any programme details to external services."
+    enforcement_message: "Blocked by EXT-01: External transmission of programme or contract information is not permitted."
