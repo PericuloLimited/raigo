@@ -2,7 +2,7 @@
 
 # RAIGO
 
-**The open standard for AI agent governance.**
+**The open standard and policy engine for AI agent governance.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/PericuloLimited/raigo/releases)
@@ -15,44 +15,63 @@
 
 ---
 
-RAIGO (Runtime AI Governance Object) is an open-source standard for defining AI agent policies as code. It solves a structural problem in the AI ecosystem: every tool — Claude, ChatGPT, n8n, OpenClaw, Microsoft Copilot — requires a completely different format for governance rules. RAIGO is the single source of truth that compiles to all of them.
+RAIGO (Runtime AI Governance Object) is an open-source policy standard and engine for AI agents. It enables unified, deterministic policy enforcement across the entire AI stack — from chat interfaces to autonomous agents, workflow automation platforms, and LLM API calls.
 
-**Write your policies once. Compile to every AI tool your organization uses.**
-
----
-
-## What RAIGO Is (and Is Not)
-
-RAIGO is a **policy format standard and an intelligent compiler**. It is not (yet) a runtime server you need to deploy. This is a deliberate design choice.
-
-Most AI tools today cannot make external API calls to a central policy engine before generating a response. They rely on system prompts, custom instructions, and JSON schemas. RAIGO meets them where they are: you run the compiler once, and it generates the exact native artifact each platform needs to enforce your policies using its own internal mechanisms.
-
-This means there is no infrastructure to manage, no server to run, and no latency to introduce. A developer can go from zero to governed AI agents in under five minutes.
-
-For organizations that need deterministic, WAF-like enforcement that does not rely on the AI model's cooperation, the [RAIGO Runtime Interceptor](./ROADMAP.md) is on the roadmap for 2026.
-
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for a full explanation of the v1 compiler model vs. the planned v2 runtime engine.
+You define your governance rules once in a `.raigo` file. RAIGO enforces them everywhere.
 
 ---
 
-## How the Compiler Works
+## How It Works
 
-The intelligence of RAIGO lives in the compiler. A `.raigo` file is a structured YAML document that captures your governance intent in a platform-agnostic way. The compiler's job is to translate that intent into the precise, idiomatic format that each AI platform understands and enforces.
+RAIGO operates as a **policy decision point** — a lightweight engine that sits in the path of your AI traffic. Before a prompt reaches an LLM, RAIGO evaluates it against your active policy. The decision is deterministic: `ALLOW`, `DENY`, or `WARN`.
 
-This is not a simple text substitution. For each target, the compiler:
+```
+Your Application
+      │
+      ▼
+┌─────────────┐         ┌──────────────┐
+│ RAIGO Engine│─ ALLOW ─▶   LLM API   │
+│  (policy.   │         │ (OpenAI,     │
+│   raigo)    │─ DENY  ─▶  Anthropic, │
+└─────────────┘   │      │  etc.)      │
+                  │      └──────────────┘
+                  ▼
+         Violation Response
+         (error_code, user_message,
+          audit_log, http_status)
+```
 
-1. **Reads the policy schema** — parsing conditions, actions, severity levels, compliance mappings, and platform overrides.
-2. **Generates native enforcement artifacts** — not just the rules, but the runtime handler instructions that tell the platform *how* to enforce them: what to say when a rule fires, how to structure the refusal, and what to log.
-3. **Embeds violation response objects** — structured error payloads (with HTTP status codes, user messages, developer messages, and audit fields) that developers can catch and handle programmatically.
+This is the same architectural pattern as a Web Application Firewall (WAF) — but for AI. The key difference from system prompts is that enforcement is **deterministic**. A `DENY` rule in a `.raigo` file cannot be overridden by prompt injection, model drift, or a creative user. The engine blocks the request before the LLM ever sees it.
 
-The result is that a single `DENY` rule in a `.raigo` file becomes a hard constraint in OpenClaw's JSON schema, a `<policy_enforcement>` block in Claude's XML system prompt, and a `violation_response` object in n8n's JSON — each formatted correctly for the platform, with no manual translation required.
+---
+
+## Deployment Models
+
+RAIGO is designed to be deployed wherever your AI applications run. The same `.raigo` policy file works across all four models.
+
+| Model | How It Runs | Best For |
+|---|---|---|
+| **Compiler** | CLI tool, zero infrastructure | ChatGPT, Claude.ai, n8n, Lovable — tools that cannot call an external engine |
+| **Local / Sidecar** | Binary or container alongside your app | Custom agents, OpenClaw, local LLMs (Ollama, vLLM) |
+| **Self-Hosted Proxy** | Centralized proxy in your own cloud | Enterprises, defence contractors, healthcare providers |
+| **RAIGO Cloud** | Managed SaaS, no infrastructure | Startups and teams who want governance without ops overhead |
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for a full technical walkthrough of each deployment model, including how the interceptor works and how to integrate RAIGO with your own platform.
+
+---
+
+## The `.raigo` File: The Source of Truth
+
+A `.raigo` file is a YAML-based, declarative policy definition. It is the single source of truth for your organization's AI governance rules. It is human-readable, version-controllable, and auditable.
 
 ```yaml
-# policy.raigo — the single source of truth
+# policy.raigo
 metadata:
   organisation: "Acme Healthcare Trust"
   policy_suite: "HIPAA AI Governance Baseline"
   version: "1.0.0"
+  effective_date: "2026-03-01"
+  owner: "Information Security Team"
 
 policies:
   - id: "DP-01"
@@ -68,110 +87,116 @@ policies:
     compliance_mapping:
       - framework: "HIPAA"
         control: "§164.502"
-        description: "Uses and disclosures of protected health information"
     audit_required: true
 ```
 
-Run the compiler and RAIGO generates platform-specific outputs for all your tools simultaneously:
+The RAIGO Engine loads this file at startup. Every AI request is evaluated against it. When a rule fires, the engine returns a structured violation response that your application can catch, log, and handle programmatically.
 
-```bash
-raigo compile policy.raigo --all
-```
-
----
-
-## Compilation Targets
-
-RAIGO currently compiles to **9 native targets**. Each output is a complete, ready-to-use artifact — not a template.
-
-| Target | Output Format | How It Is Used |
-|---|---|---|
-| `claude` | XML System Prompt | Paste into the `system` parameter of the Claude API, or into Claude.ai project instructions |
-| `chatgpt` | Markdown Instructions | Paste into ChatGPT Custom Instructions, or the `system` message of the Assistants API |
-| `n8n` | JSON System Prompt | Load as a Global Variable in n8n; reference in AI Agent node system prompts |
-| `openclaw` | JSON Constraint Schema | Place in your OpenClaw project directory; enforced natively by the OpenClaw gateway |
-| `lovable` | Markdown Knowledge Block | Add to Lovable Workspace Knowledge; applied to all AI interactions in the workspace |
-| `gemini` | JSON System Instruction | Pass as the `system_instruction` field in the Vertex AI / Gemini API |
-| `perplexity` | Markdown System Prompt | Add to Perplexity Spaces custom instructions |
-| `copilot` | JSON Policy Object | Add to Microsoft Copilot Studio declarative agent manifest |
-| `audit` | Markdown Summary | Human-readable compliance evidence for auditors |
+See the full [`.raigo` Format Specification](./SPECIFICATION.md) for the complete schema.
 
 ---
 
 ## Quick Start
 
-### Using the CLI
+### Using the CLI (Compiler Mode)
+
+The fastest way to get started — no server required. Compiles your `.raigo` policy into native artifacts for 9 AI platforms.
 
 ```bash
 # Install globally
 npm install -g @periculo/raigo
 
-# Initialise a new policy file in the current directory
+# Initialise a new policy file
 raigo init
 
-# Validate your policy file against the schema
+# Validate your policy file
 raigo validate policy.raigo
 
-# List all available compilation targets
-raigo targets
-
-# Compile for a specific target
+# Compile for a specific platform
 raigo compile policy.raigo --target openclaw
+raigo compile policy.raigo --target chatgpt
+raigo compile policy.raigo --target claude
 
-# Compile for all targets at once (outputs to ./raigo-compiled/)
+# Compile for all platforms at once
 raigo compile policy.raigo --all
+```
+
+### Calling the Engine API (Engine Mode)
+
+When running the RAIGO Engine (locally or in the cloud), your application evaluates policies via a simple HTTP API before sending traffic to the LLM.
+
+```javascript
+// Before sending to OpenAI, check with RAIGO
+const decision = await fetch('http://localhost:8181/v1/evaluate', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    prompt: userMessage,
+    context: { data_classification: ['PHI'], environment: 'production' }
+  })
+});
+
+const { result } = await decision.json();
+
+if (result.action === 'DENY') {
+  // Return the structured violation response to the user
+  return { error: result.violation_response.user_message };
+}
+
+// Safe to proceed — send to LLM
+const llmResponse = await openai.chat.completions.create({ ... });
 ```
 
 ### Using the Web Generator
 
-Visit [raigo.periculo.co.uk](https://raigo.periculo.co.uk), paste your corporate policy in plain English, and download your compiled `.raigo` file and all platform outputs instantly. The web generator uses an LLM to parse your natural language policy and structure it into a valid `.raigo` file.
+Visit [raigo.periculo.co.uk](https://raigo.periculo.co.uk) to generate a `.raigo` file from plain English using the LLM-powered ingestion tool.
 
 ---
 
-## Integrating RAIGO into Your Application
+## Compilation Targets (Compiler Mode)
 
-RAIGO is designed to be embedded into other tools and platforms. If you are building an AI tool, agent framework, or workflow platform, you can add native RAIGO support so your users can govern it with a `.raigo` file.
+When running in compiler mode, RAIGO generates native enforcement artifacts for 9 platforms. Each output includes runtime handler instructions telling the platform exactly how to enforce the policy.
 
-**What "native RAIGO support" means for your platform:**
+| Target | Output Format | How It Is Used |
+|---|---|---|
+| `claude` | XML System Prompt | Injected into the Claude API `system` parameter |
+| `chatgpt` | Markdown Instructions | Pasted into ChatGPT Custom Instructions or Assistants API |
+| `n8n` | JSON System Prompt | Loaded as a Global Variable in n8n AI Agent nodes |
+| `openclaw` | JSON Constraint Schema | Placed in OpenClaw project directory and enforced natively |
+| `lovable` | Markdown Knowledge Block | Added to Lovable Workspace Knowledge |
+| `gemini` | JSON System Instruction | Passed as `system_instruction` in the Vertex AI API |
+| `perplexity` | Markdown System Prompt | Added to Perplexity Spaces custom instructions |
+| `copilot` | JSON Policy Object | Added to Microsoft Copilot Studio declarative agent manifest |
+| `audit` | Markdown Summary | Human-readable compliance evidence for auditors |
 
-1. Your platform reads the compiled RAIGO output for its target (e.g., `openclaw_policy.json`).
-2. Your platform enforces the rules in that output using its own internal mechanisms.
-3. When a rule fires, your platform returns the structured `violation_response` object from the compiled output.
+---
 
-There is no RAIGO SDK to install, no RAIGO server to call, and no runtime dependency. The compiled output is a static artifact that your platform reads once at startup (or on each request, if you hot-reload policies).
+## Integrating RAIGO into Your Platform
 
-See [ARCHITECTURE.md](./ARCHITECTURE.md) for a detailed walkthrough of the integration model, and the [Compiler source](./cli/src/compiler.ts) to understand exactly what each target output contains.
+If you are building an AI tool, agent framework, or workflow platform, you can add native RAIGO support so your users can govern it with a `.raigo` file.
+
+**Option 1: Engine Integration.** Configure your platform to call the RAIGO Engine API before executing AI actions. Your platform passes the proposed action to RAIGO and receives a deterministic `ALLOW`/`DENY`/`WARN` decision. This is the recommended approach for any platform that can make HTTP calls.
+
+**Option 2: Compiler Integration.** Add a RAIGO compilation target for your platform's native policy format. When users run `raigo compile policy.raigo --target yourplatform`, RAIGO generates the correct artifact for your platform to load and enforce natively.
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for a detailed integration guide.
 
 ---
 
 ## Why RAIGO?
 
-The AI governance problem is structural, not cosmetic. System prompts are suggestions — they can be overridden, forgotten, or simply ignored by the model. Policies stored in Word documents or wikis are invisible to the AI tools they are meant to govern. And as organizations adopt more AI tools, the problem compounds: each platform has a different format, a different enforcement model, and a different way of expressing constraints.
-
-RAIGO treats AI governance as an engineering problem, not a documentation problem.
-
 | The Problem | The RAIGO Solution |
 |---|---|
-| System prompts are suggestions, not enforceable rules | Declarative policies compiled into platform-native enforcement formats |
+| System prompts are suggestions, not enforceable rules | Deterministic policy evaluation before requests reach the LLM |
 | Every AI tool requires a different policy format | One `.raigo` file compiles to all targets simultaneously |
 | Policies live in people's heads or Word documents | Machine-readable, version-controlled, auditable policy-as-code |
-| No standard way to govern AI agents across an organization | An open standard, like `robots.txt` or `.htaccess` for AI |
-| Compliance evidence is manual and fragile | Automated audit summaries generated on every compile |
-| Governance relies on the AI model's cooperation | Roadmap: runtime interceptor for deterministic enforcement |
-
----
-
-## The `.raigo` Format
-
-The `.raigo` format is a YAML-based, declarative policy definition language. It is designed to be human-readable (policy authors do not need to be engineers), machine-parseable (the compiler validates and transforms it reliably), version-controllable (policies live in your repository, not in a SaaS dashboard), and auditable (every change is tracked by your existing version control system).
-
-See the full [`.raigo` Format Specification](./SPECIFICATION.md) for the complete schema reference, all supported fields, condition triggers, compliance framework mappings, and advanced usage.
+| No standard way to govern AI agents across an organization | An open standard, deployable anywhere: local, cloud, or SaaS |
+| Compliance evidence is manual and fragile | Automated audit summaries and structured violation logs |
+| Governance is all-or-nothing | Granular severity levels: `DENY`, `WARN`, `ENFORCE` |
 
 ---
 
 ## Examples
-
-The [`/examples`](./examples/) directory contains ready-to-use `.raigo` files for common use cases:
 
 | Example | Compliance Framework | Description |
 |---|---|---|
@@ -183,16 +208,15 @@ The [`/examples`](./examples/) directory contains ready-to-use `.raigo` files fo
 
 ## Ecosystem
 
-RAIGO is designed to be the policy layer for the entire AI agent ecosystem.
-
 | Tool | Status | Description |
 |---|---|---|
-| RAIGO CLI | **Available** | Compile, validate, and initialize `.raigo` files from the command line |
-| RAIGO Web Generator | **Available** | Web-based compiler with LLM-powered natural language ingestion |
-| VS Code Extension | Planned | Syntax highlighting, linting, and live compilation preview |
-| GitHub Action | Planned | Validate `.raigo` files in CI/CD pipelines on every commit |
-| Policy Registry | Planned | Public registry for sharing community-contributed policies |
-| Runtime Interceptor | Planned | WAF-like proxy for deterministic, runtime policy enforcement |
+| RAIGO CLI | **Available** | Compile, validate, and initialize `.raigo` files |
+| RAIGO Web Generator | **Available** | LLM-powered natural language policy ingestion |
+| RAIGO Engine (Local) | **In Development** | Lightweight binary for local/sidecar deployment |
+| RAIGO Engine (Cloud) | **In Development** | Managed SaaS policy evaluation API |
+| VS Code Extension | Planned | Syntax highlighting, linting, live compilation |
+| GitHub Action | Planned | Validate `.raigo` files in CI/CD pipelines |
+| Policy Registry | Planned | Public registry for sharing community policies |
 
 ---
 
@@ -204,21 +228,19 @@ Does your organization use RAIGO in production? Please submit a pull request to 
 
 ## Contributing
 
-RAIGO is an open standard and we welcome contributions of all kinds — from improving the specification and adding new compiler targets, to contributing example policies for new compliance frameworks and industries.
-
-Please read the [Contributing Guide](./CONTRIBUTING.md) to learn how to make your first contribution. Review our [Governance Model](./GOVERNANCE.md) to understand how decisions are made. Check the [Roadmap](./ROADMAP.md) to see where the project is headed.
+RAIGO is an open standard and we welcome contributions of all kinds. Please read the [Contributing Guide](./CONTRIBUTING.md), review our [Governance Model](./GOVERNANCE.md), and check the [Roadmap](./ROADMAP.md).
 
 ---
 
 ## Security
 
-Please report vulnerabilities by email to **security@periculo.co.uk**. For full details, see our [Security Policy](./SECURITY.md).
+Please report vulnerabilities to **security@periculo.co.uk**. See our [Security Policy](./SECURITY.md).
 
 ---
 
 ## Enterprise
 
-Managing `.raigo` files across dozens of repositories and AI tools? The **Periculo Enterprise Control Plane** provides centralised policy management, automatic sync to connected tools, fleet-wide enforcement, and a full audit trail.
+The **Periculo Enterprise Control Plane** provides centralized policy management, automatic sync to connected tools, fleet-wide enforcement, and a full audit trail across all deployment models.
 
 [Book a free 15-minute AI Governance Review →](https://periculo.co.uk/book)
 

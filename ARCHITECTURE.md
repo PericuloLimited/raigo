@@ -1,53 +1,82 @@
-# RAIGO Architecture & Integration Model
+# RAIGO Architecture & Deployment Model
 
-To understand what RAIGO actually is, it is helpful to compare it to the Open Policy Agent (OPA). 
+RAIGO is designed to solve a fundamental problem in AI governance: **how do you enforce consistent policies across a highly fragmented ecosystem of AI tools, agents, and models?**
 
-OPA is primarily a **runtime engine**. You run an OPA server (or sidecar), and your application makes an API call (`POST /v1/data/my/policy`) to ask OPA: *"Can this user do this thing?"* OPA evaluates the rules and returns a JSON response (`allow: true`).
+To solve this, RAIGO provides a flexible architecture that meets AI applications wherever they are deployed. The core of the system is the **RAIGO Engine** — a lightweight, high-performance policy evaluation server that acts like a Web Application Firewall (WAF) for AI traffic.
 
-**RAIGO today (v1) is NOT a runtime engine.** It is a **compiler and a standard format**. 
+Because different applications have different latency, privacy, and architectural requirements, RAIGO supports four distinct deployment models.
 
-The core insight behind RAIGO v1 is that the AI ecosystem is highly fragmented. Most AI tools (ChatGPT, Claude, n8n, Lovable) do not have the capability to make external API calls to a central policy engine before they generate a token or execute an agentic step. They rely entirely on their system prompts, custom instructions, or internal JSON schemas.
+---
 
-Therefore, RAIGO v1 takes a **"compile-time" approach** to governance.
+## The Core Concept: The AI WAF
 
-## RAIGO v1: The Compiler Architecture
+At its heart, RAIGO is a policy engine. You feed it a `.raigo` file (which contains your declarative governance rules), and you place it in the path of your AI traffic.
 
-In v1, RAIGO acts as a translation layer between human-readable governance and machine-enforced constraints.
+When an application or agent wants to send a prompt to an LLM, it first calls the RAIGO Engine:
 
-1. **The Source of Truth:** You define your policies in a single, declarative `.raigo` YAML file.
-2. **The Compiler:** The RAIGO CLI reads this file.
-3. **The Output:** The compiler generates platform-specific artifacts (XML for Claude, JSON for n8n, Markdown for ChatGPT). 
-4. **The Enforcement:** You inject these compiled artifacts directly into the respective tools.
+1. **Request:** The application sends the proposed payload (prompt, context, tool call) to RAIGO.
+2. **Evaluation:** RAIGO evaluates the payload against the active `.raigo` policy.
+3. **Decision:** RAIGO returns a deterministic decision: `ALLOW`, `DENY`, or `WARN`, along with a structured violation response if a rule was triggered.
+4. **Enforcement:** The application (or the RAIGO proxy itself) blocks the request or modifies the prompt before it ever reaches the LLM.
 
-**Why this matters for virality:**
-Developers do not need to stand up a new server, manage infrastructure, or add network latency to use RAIGO today. They just run `npm install -g @periculo/raigo`, compile their policy, and paste the result into their tool. It is entirely frictionless.
+This deterministic, interceptor-based approach guarantees that policies (like "Never send PII to an external model") are enforced reliably, without relying on the LLM to follow system prompt instructions.
 
-### How OpenClaw Integration Works (v1)
+---
 
-OpenClaw is a framework for building AI agents. To integrate RAIGO with OpenClaw today, you do not set up a RAIGO server. Instead, you use the compiler:
+## The Four Deployment Models
 
-1. You write `policy.raigo`.
-2. You run `raigo compile policy.raigo --target openclaw`.
-3. RAIGO generates an `openclaw_policy.json` file.
-4. You place this JSON file into your OpenClaw project (e.g., as a hard constraint or system prompt).
-5. When OpenClaw runs, it reads this JSON file natively and enforces the rules using its own internal mechanisms.
+The beauty of RAIGO is its deployment flexibility. The exact same `.raigo` policy file can be enforced across any of these four architectures.
 
-The "secret sauce" of RAIGO is the intelligence of the compiler — it knows exactly how to format the rules, constraints, and violation responses so that OpenClaw (or Claude, or n8n) understands them and enforces them correctly.
+### 1. The Compiler Model (Zero Infrastructure)
+**Best for:** ChatGPT, Claude.ai, n8n, Lovable, lightweight agent scripts.
 
-## RAIGO v2: The Runtime Interceptor (Future)
+For tools that cannot make external API calls to a policy engine before generating a response, RAIGO operates as an intelligent compiler.
 
-While the compiler approach solves the immediate problem of fragmented system prompts, it has limitations: it relies on the AI model to actually follow the instructions. For high-assurance environments (Defence, Healthcare), you need deterministic enforcement.
+*   **How it works:** You run the RAIGO CLI (`raigo compile policy.raigo`). The compiler translates your policy into the native format required by the target tool (e.g., a structured Markdown system prompt for ChatGPT, or a JSON schema for OpenClaw).
+*   **Enforcement:** The target tool enforces the policy using its own internal mechanisms.
+*   **Pros:** Zero infrastructure, zero latency, instant setup.
+*   **Cons:** Relies on the AI model's cooperation; not suitable for high-assurance environments.
 
-This is where RAIGO v2 comes in. RAIGO v2 will introduce the **RAIGO Runtime Interceptor** — a WAF-like proxy for AI traffic.
+### 2. Local / Sidecar Engine (Self-Hosted)
+**Best for:** Custom AI agents, OpenClaw deployments, local LLMs (Ollama, vLLM).
 
-1. **The Proxy:** You route your AI API traffic (e.g., to OpenAI or Anthropic) through the RAIGO Interceptor.
-2. **The Engine:** The Interceptor holds the `.raigo` policy.
-3. **The Evaluation:** Before the request reaches the LLM, and before the response reaches the user, the Interceptor evaluates the payload against the policy.
-4. **The Enforcement:** If a policy is violated (e.g., PII detected in the prompt), the Interceptor blocks the request deterministically, without relying on the LLM's cooperation.
+For developers building their own AI applications or agents, the RAIGO Engine can run locally as a lightweight binary or sidecar container alongside the application.
 
-This model is much closer to OPA, but purpose-built for the unstructured nature of LLM inputs and outputs.
+*   **How it works:** You run the RAIGO Engine binary on the same machine or pod as your application. Your application makes a fast, local HTTP/gRPC call to `localhost:8181/v1/evaluate` before sending traffic to the LLM.
+*   **Enforcement:** Deterministic interception by your application based on the engine's response.
+*   **Pros:** Ultra-low latency (<5ms), complete data privacy (payloads never leave your network), highly scalable.
+*   **Cons:** Requires you to manage the sidecar deployment.
 
-## Summary
+### 3. Enterprise Cloud Proxy (Self-Hosted)
+**Best for:** Large enterprises, defence contractors, healthcare providers with strict compliance requirements (CMMC, HIPAA).
 
-*   **RAIGO v1 (Current):** A standard file format (`.raigo`) and an intelligent compiler that generates native policy artifacts for fragmented AI tools. No server required. High virality, low friction.
-*   **RAIGO v2 (Planned):** A runtime proxy engine for deterministic, WAF-like enforcement of `.raigo` policies across all AI traffic. High assurance, enterprise-grade.
+For organizations that need to govern all AI traffic across multiple teams and applications from a central choke point.
+
+*   **How it works:** You deploy the RAIGO Engine as a centralized proxy server (e.g., behind an API gateway) in your own AWS/Azure/GCP environment. All internal applications are configured to route their OpenAI/Anthropic API calls through the RAIGO proxy.
+*   **Enforcement:** The proxy intercepts the request, evaluates it against the central `.raigo` policy, and either forwards it to the LLM provider or returns a 403 Forbidden with the policy violation details.
+*   **Pros:** Centralized control, unified audit logging, impossible for individual development teams to bypass.
+*   **Cons:** Introduces network latency; requires managing high-availability proxy infrastructure.
+
+### 4. RAIGO SaaS (Managed Service)
+**Best for:** Startups, mid-market companies, and teams that want enterprise-grade governance without managing infrastructure.
+
+The fully managed version of the RAIGO Engine, provided by Periculo.
+
+*   **How it works:** You point your applications to the RAIGO Cloud API endpoint. You manage your `.raigo` policies via the web dashboard. The managed engine handles the evaluation and logging.
+*   **Enforcement:** Deterministic interception by your application based on the cloud engine's response.
+*   **Pros:** Zero infrastructure management, built-in analytics, automatic policy syncing, seamless integration with the Periculo Control Plane.
+*   **Cons:** Introduces network latency to the RAIGO Cloud; payloads leave your environment for evaluation.
+
+---
+
+## Integrating with OpenClaw
+
+To illustrate how this flexibility works in practice, consider integrating RAIGO with an OpenClaw agent.
+
+**Option A: The Compiler Route (Today)**
+You run `raigo compile policy.raigo --target openclaw`. You take the resulting `openclaw_policy.json` and drop it into your OpenClaw configuration. OpenClaw reads it and attempts to enforce it natively.
+
+**Option B: The Engine Route (The Future)**
+You run the RAIGO Engine locally. You configure OpenClaw to use RAIGO as its policy decision point. Before OpenClaw executes a tool or sends a prompt, it queries `localhost:8181`. If RAIGO says `DENY`, OpenClaw halts the action immediately.
+
+This dual approach ensures that RAIGO can be adopted instantly by individual developers (via the compiler), while providing a clear upgrade path to enterprise-grade, deterministic enforcement (via the engine) as their needs mature.
