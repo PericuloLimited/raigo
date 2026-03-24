@@ -1,0 +1,39 @@
+{
+  "name": "@periculo/raigo",
+  "version": "1.0.0",
+  "description": "RAIGO by Periculo — The declarative standard for AI agent governance. Define your policies once. Compile to every AI tool.",
+  "main": "dist/index.js",
+  "bin": {
+    "raigo": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/cli.ts",
+    "test": "node dist/cli.js compile examples/iso27001_healthcare.raigo --all && echo 'Test passed'"
+  },
+  "keywords": ["ai", "governance", "policy", "security", "raigo", "periculo", "guardrails", "compliance"],
+  "author": "Periculo Limited <hello@periculo.co.uk>",
+  "license": "MIT",
+  "homepage": "https://raigo.periculo.co.uk",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PericuloLimited/raigo.git"
+  },
+  "bugs": {
+    "url": "https://github.com/PericuloLimited/raigo/issues"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "js-yaml": "^4.1.0",
+    "ora": "^8.0.1"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
