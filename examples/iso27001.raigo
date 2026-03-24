@@ -1,0 +1,394 @@
+---
+# =============================================================================
+# RAIGO Policy Definition File — v2.0
+# Format: RAIGO AI Policy Definition Language (AIPDL) v2.0
+# Specification: https://github.com/PericuloLimited/raigo/blob/main/SPECIFICATION.md
+# =============================================================================
+
+raigo_version: "2.0"
+
+metadata:
+  organisation: "Acme Healthcare Trust"
+  policy_suite: "ISO 27001 AI Governance Baseline"
+  version: "1.3.0"
+  effective_date: "2026-03-01"
+  review_date: "2026-09-01"
+  owner: "Information Security Team"
+  contact: "security@acme-health.nhs.uk"
+  classification: "OFFICIAL-SENSITIVE"
+  jurisdiction: "UK"
+  approved_by: "CISO"
+  changelog:
+    - version: "1.3.0"
+      date: "2026-03-01"
+      author: "J. Smith"
+      summary: "Added CUI handling rules for AI agents following DSPT audit"
+    - version: "1.2.0"
+      date: "2026-01-15"
+      author: "J. Smith"
+      summary: "Initial ISO 27001 baseline"
+
+# =============================================================================
+# CONTEXT — Defines the environment, allowed tools, and data classifications
+# =============================================================================
+
+context:
+  environments:
+    - id: "production"
+      description: "Live clinical and operational systems"
+      risk_level: "critical"
+    - id: "staging"
+      description: "Test and development environment"
+      risk_level: "medium"
+    - id: "sandbox"
+      description: "Isolated experimentation environment"
+      risk_level: "low"
+
+  data_classifications:
+    - id: "PII"
+      description: "Personally Identifiable Information"
+      examples: ["name", "NHS number", "date of birth", "address", "email"]
+    - id: "PHI"
+      description: "Protected Health Information"
+      examples: ["diagnosis", "medication", "clinical notes", "test results"]
+    - id: "CUI"
+      description: "Controlled Unclassified Information"
+      examples: ["internal financial data", "staff records", "supplier contracts"]
+    - id: "PUBLIC"
+      description: "Non-sensitive publicly available information"
+      examples: ["published guidelines", "public announcements"]
+
+  allowed_tools:
+    - id: "n8n"
+      description: "Internal workflow automation"
+      environments: ["production", "staging"]
+    - id: "microsoft_copilot"
+      description: "Enterprise AI assistant"
+      environments: ["production", "staging"]
+    - id: "claude"
+      description: "AI assistant for document processing"
+      environments: ["staging", "sandbox"]
+    - id: "chatgpt"
+      description: "NOT approved for any use with patient data"
+      environments: ["sandbox"]
+
+  networks:
+    - id: "internal_clinical"
+      public: false
+      description: "NHS internal clinical network"
+    - id: "internal_admin"
+      public: false
+      description: "NHS administrative network"
+    - id: "internet"
+      public: true
+      description: "Public internet"
+
+  servers:
+    - id: "clinical_db"
+      protocols: ["tls_1_3"]
+      networks: ["internal_clinical"]
+      data_classifications: ["PHI", "PII"]
+    - id: "admin_portal"
+      protocols: ["https"]
+      networks: ["internal_admin"]
+      data_classifications: ["CUI"]
+    - id: "public_api"
+      protocols: ["https"]
+      networks: ["internet"]
+      data_classifications: ["PUBLIC"]
+
+# =============================================================================
+# POLICIES — Atomic, declarative rules. One rule = one directive.
+# =============================================================================
+
+policies:
+
+  # ---------------------------------------------------------------------------
+  # DOMAIN: Data Privacy
+  # ---------------------------------------------------------------------------
+
+  - id: "DP-01"
+    domain: "Data Privacy"
+    title: "Block PII transmission to external systems"
+    condition:
+      trigger: "output_contains"
+      data_classification: ["PII", "PHI"]
+      environment: ["production"]
+    action: "DENY"
+    severity: "critical"
+    directive: "Never transmit personally identifiable information (PII) or protected health information (PHI) outside approved internal systems."
+    enforcement_message: "BLOCKED [DP-01]: Transmission of PII/PHI to external systems is prohibited. This action violates ISO 27001 control A.8.2 and DSPT Standard 3."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.8.2"
+        description: "Information classification"
+      - framework: "DSPT"
+        control: "3.1"
+        description: "Personal data is only accessible to authorised users"
+      - framework: "HIPAA"
+        control: "164.514"
+        description: "De-identification of protected health information"
+    risk_level: "critical"
+    audit_required: true
+    human_review_required: false
+    tags: ["data-privacy", "pii", "phi", "hipaa", "dspt"]
+    platforms:
+      - target: "n8n"
+        override_message: "WORKFLOW HALTED: PII/PHI detected in output. Escalate to Information Governance team."
+      - target: "microsoft_copilot"
+        override_message: "I cannot share that information. It contains patient data that must remain within secure clinical systems."
+
+  - id: "DP-02"
+    domain: "Data Privacy"
+    title: "Anonymise data in non-production environments"
+    condition:
+      trigger: "always"
+      environment: ["staging", "sandbox"]
+    action: "ENFORCE"
+    severity: "high"
+    directive: "Always use anonymised or synthetic data in non-production environments. Never use real patient records for testing."
+    enforcement_message: "ENFORCED [DP-02]: Use only anonymised test data in this environment."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.8.3"
+        description: "Information handling procedures"
+      - framework: "DSPT"
+        control: "3.2"
+        description: "Test environments do not use live personal data"
+    risk_level: "high"
+    audit_required: true
+    human_review_required: false
+    tags: ["data-privacy", "testing", "anonymisation"]
+
+  - id: "DP-03"
+    domain: "Data Privacy"
+    title: "Enforce UK data residency"
+    condition:
+      trigger: "data_transfer"
+      destination: "outside_uk"
+      data_classification: ["PII", "PHI", "CUI"]
+    action: "DENY"
+    severity: "critical"
+    directive: "Patient and staff data must remain within UK jurisdiction. Do not transfer data to servers or services outside the United Kingdom."
+    enforcement_message: "BLOCKED [DP-03]: Cross-border data transfer denied. UK GDPR Article 46 prohibits transfer of personal data outside the UK without adequate safeguards."
+    compliance_mapping:
+      - framework: "UK_GDPR"
+        control: "Article 46"
+        description: "Transfers subject to appropriate safeguards"
+      - framework: "DSPT"
+        control: "3.4"
+        description: "Data is not transferred outside the UK without authorisation"
+    risk_level: "critical"
+    audit_required: true
+    human_review_required: true
+    review_message: "A data transfer outside UK jurisdiction has been requested. This requires CISO approval before proceeding."
+    tags: ["data-privacy", "geofencing", "uk-gdpr", "data-residency"]
+
+  # ---------------------------------------------------------------------------
+  # DOMAIN: Access Control
+  # ---------------------------------------------------------------------------
+
+  - id: "AC-01"
+    domain: "Access Control"
+    title: "Enforce least privilege for AI agent tool access"
+    condition:
+      trigger: "tool_invocation"
+      environment: ["production"]
+    action: "ENFORCE"
+    severity: "high"
+    directive: "AI agents must only access the minimum set of tools and data sources required to complete the specific task. Do not request broad permissions."
+    enforcement_message: "ENFORCED [AC-01]: Least privilege principle applied. Agent access is restricted to task-required resources only."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.9.2"
+        description: "User access management"
+      - framework: "NIST_800_53"
+        control: "AC-6"
+        description: "Least Privilege"
+      - framework: "CMMC"
+        control: "AC.L2-3.1.3"
+        description: "Control CUI flow"
+    risk_level: "high"
+    audit_required: true
+    human_review_required: false
+    tags: ["access-control", "least-privilege", "cmmc", "nist"]
+
+  - id: "AC-02"
+    domain: "Access Control"
+    title: "Block access to clinical database from public-facing agents"
+    condition:
+      trigger: "data_access"
+      source_server: "clinical_db"
+      agent_network: ["internet"]
+    action: "DENY"
+    severity: "critical"
+    directive: "AI agents operating on internet-facing channels must never have direct access to the clinical database."
+    enforcement_message: "BLOCKED [AC-02]: Direct clinical database access from internet-facing agents is prohibited."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.9.4"
+        description: "System and application access control"
+      - framework: "DSPT"
+        control: "7.1"
+        description: "Network security controls are in place"
+    risk_level: "critical"
+    audit_required: true
+    human_review_required: false
+    tags: ["access-control", "network-segmentation", "clinical-data"]
+
+  # ---------------------------------------------------------------------------
+  # DOMAIN: Secure Code Generation
+  # ---------------------------------------------------------------------------
+
+  - id: "CG-01"
+    domain: "Secure Code Generation"
+    title: "Prohibit hardcoded credentials in generated code"
+    condition:
+      trigger: "code_generation"
+      pattern: "hardcoded_credentials"
+    action: "DENY"
+    severity: "critical"
+    directive: "Never generate code that contains hardcoded API keys, passwords, connection strings, or any form of credential."
+    enforcement_message: "BLOCKED [CG-01]: Hardcoded credentials detected in generated code. Use environment variables or a secrets manager instead."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.9.4.3"
+        description: "Password management system"
+      - framework: "OWASP"
+        control: "A02:2021"
+        description: "Cryptographic Failures"
+    risk_level: "critical"
+    audit_required: true
+    human_review_required: false
+    tags: ["secure-code", "credentials", "owasp"]
+
+  - id: "CG-02"
+    domain: "Secure Code Generation"
+    title: "Enforce SQL injection prevention"
+    condition:
+      trigger: "code_generation"
+      language: ["sql", "python", "javascript", "typescript"]
+    action: "ENFORCE"
+    severity: "high"
+    directive: "All database queries in generated code must use parameterised queries or prepared statements. Never concatenate user input directly into SQL strings."
+    enforcement_message: "ENFORCED [CG-02]: SQL injection prevention applied. Parameterised queries required."
+    compliance_mapping:
+      - framework: "OWASP"
+        control: "A03:2021"
+        description: "Injection"
+      - framework: "ISO_27001"
+        control: "A.14.2.5"
+        description: "Secure system engineering principles"
+    risk_level: "high"
+    audit_required: false
+    human_review_required: false
+    tags: ["secure-code", "sql-injection", "owasp"]
+
+  # ---------------------------------------------------------------------------
+  # DOMAIN: Incident Response
+  # ---------------------------------------------------------------------------
+
+  - id: "IR-01"
+    domain: "Incident Response"
+    title: "Escalate suspected security incidents to human reviewer"
+    condition:
+      trigger: "anomaly_detected"
+      anomaly_types: ["prompt_injection", "data_exfiltration_attempt", "unusual_tool_invocation"]
+    action: "WARN"
+    severity: "high"
+    directive: "When a potential security incident is detected, immediately pause the workflow, log the event, and escalate to the security team before continuing."
+    enforcement_message: "WARNING [IR-01]: Potential security incident detected. This event has been logged and the security team has been notified. Do not continue without human approval."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.16.1"
+        description: "Management of information security incidents"
+      - framework: "DSPT"
+        control: "9.1"
+        description: "Processes are in place for identifying and reporting data security incidents"
+    risk_level: "high"
+    audit_required: true
+    human_review_required: true
+    review_message: "A potential security incident has been flagged by an AI agent. Please review the attached context and approve or deny continuation."
+    escalation_contact: "security-incidents@acme-health.nhs.uk"
+    tags: ["incident-response", "escalation", "prompt-injection"]
+
+  # ---------------------------------------------------------------------------
+  # DOMAIN: Vendor & Third-Party Risk
+  # ---------------------------------------------------------------------------
+
+  - id: "VR-01"
+    domain: "Vendor Risk"
+    title: "Restrict AI tool usage to approved vendor list"
+    condition:
+      trigger: "tool_invocation"
+      tool_not_in: ["n8n", "microsoft_copilot", "claude"]
+    action: "DENY"
+    severity: "high"
+    directive: "Only use AI tools and services from the organisation's approved vendor list. Do not connect to or invoke unapproved third-party AI services."
+    enforcement_message: "BLOCKED [VR-01]: This AI tool or service is not on the approved vendor list. Contact the Information Governance team to request approval."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.15.1"
+        description: "Information security in supplier relationships"
+      - framework: "DSPT"
+        control: "12.1"
+        description: "Third-party suppliers are assessed for data security"
+    risk_level: "high"
+    audit_required: true
+    human_review_required: false
+    tags: ["vendor-risk", "approved-tools", "supply-chain"]
+
+  # ---------------------------------------------------------------------------
+  # DOMAIN: Audit & Logging
+  # ---------------------------------------------------------------------------
+
+  - id: "AL-01"
+    domain: "Audit and Logging"
+    title: "Require audit logging for all DENY actions"
+    condition:
+      trigger: "action_triggered"
+      action_type: "DENY"
+    action: "ENFORCE"
+    severity: "critical"
+    directive: "Every DENY action must generate an immutable audit log entry containing: timestamp, rule_id, agent_id, action_attempted, and the data classification involved."
+    enforcement_message: "ENFORCED [AL-01]: Audit log entry created for this denial event."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.12.4"
+        description: "Logging and monitoring"
+      - framework: "DSPT"
+        control: "9.3"
+        description: "Audit logs are maintained and reviewed"
+      - framework: "UK_GDPR"
+        control: "Article 5(2)"
+        description: "Accountability principle"
+    risk_level: "critical"
+    audit_required: true
+    human_review_required: false
+    tags: ["audit", "logging", "accountability", "uk-gdpr"]
+
+  # ---------------------------------------------------------------------------
+  # DOMAIN: Encryption
+  # ---------------------------------------------------------------------------
+
+  - id: "EN-01"
+    domain: "Encryption"
+    title: "Enforce TLS 1.3 for all data in transit"
+    condition:
+      trigger: "data_transmission"
+      protocol_below: "tls_1_3"
+    action: "DENY"
+    severity: "critical"
+    directive: "All data transmitted by AI agents must use TLS 1.3 or higher. Reject any connection that does not meet this standard."
+    enforcement_message: "BLOCKED [EN-01]: Insecure transmission protocol detected. TLS 1.3 minimum required."
+    compliance_mapping:
+      - framework: "ISO_27001"
+        control: "A.10.1"
+        description: "Cryptographic controls"
+      - framework: "DSPT"
+        control: "7.2"
+        description: "Data in transit is encrypted"
+    risk_level: "critical"
+    audit_required: true
+    human_review_required: false
+    tags: ["encryption", "tls", "data-in-transit"]
