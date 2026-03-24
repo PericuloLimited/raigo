@@ -1,0 +1,41 @@
+version: "1.0"
+organization: "Example Startup"
+department: "All Teams"
+last_updated: "2026-03-24T10:00:00Z"
+
+context:
+  environment: "production"
+  data_classification: "internal"
+  allowed_tools:
+    - "github_api"
+    - "notion_api"
+    - "slack_api"
+    - "linear_api"
+
+policies:
+  - id: "SEC-01"
+    domain: "Code Generation"
+    condition: "Always"
+    action: "ENFORCE"
+    directives:
+      - "Never hardcode API keys, passwords, tokens, or secrets in generated code."
+      - "Always use environment variables for configuration secrets."
+      - "Sanitise all user inputs before passing them to database queries."
+      - "Do not commit secrets to version control."
+
+  - id: "DP-01"
+    domain: "Data Privacy"
+    condition: "If handling user data"
+    action: "ENFORCE"
+    directives:
+      - "Do not log or expose user email addresses, payment information, or personal details in debug output."
+      - "Anonymise user data in non-production environments."
+
+  - id: "COM-01"
+    domain: "External Communication"
+    condition: "When drafting customer-facing content"
+    action: "ENFORCE"
+    directives:
+      - "Do not make pricing commitments or SLA guarantees without human approval."
+      - "Do not share unreleased product roadmap information."
+      - "Maintain a professional and friendly tone."

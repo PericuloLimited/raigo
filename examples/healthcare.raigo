@@ -1,0 +1,48 @@
+version: "1.0"
+organization: "Example Healthcare Trust"
+department: "Clinical Operations"
+last_updated: "2026-03-24T10:00:00Z"
+
+context:
+  environment: "production"
+  data_classification: "restricted"
+  allowed_tools:
+    - "internal_ehr_api"
+    - "internal_scheduling"
+    - "approved_document_store"
+
+policies:
+  - id: "HIPAA-01"
+    domain: "Data Privacy"
+    condition: "Always"
+    action: "DENY"
+    directives:
+      - "Never process, store, or transmit real patient names, dates of birth, NHS/insurance numbers, or diagnosis codes."
+      - "Do not send any patient data to external APIs or third-party services."
+      - "All patient references must use anonymised identifiers only."
+    enforcement_message: "Action blocked by HIPAA-01: This agent is not permitted to handle Protected Health Information (PHI). Please anonymise all patient data before proceeding."
+
+  - id: "HIPAA-02"
+    domain: "Data Access"
+    condition: "If accessing patient records"
+    action: "ENFORCE"
+    directives:
+      - "Only access patient records through the approved internal_ehr_api tool."
+      - "Log all data access events with a timestamp and purpose."
+      - "Apply minimum necessary access — retrieve only the specific fields required for the task."
+
+  - id: "SEC-01"
+    domain: "Code Generation"
+    condition: "Always"
+    action: "ENFORCE"
+    directives:
+      - "Never hardcode credentials, API keys, or connection strings."
+      - "All database queries must use parameterised inputs to prevent SQL injection."
+
+  - id: "COM-01"
+    domain: "Communication"
+    condition: "When generating patient-facing content"
+    action: "ENFORCE"
+    directives:
+      - "Do not provide definitive medical diagnoses or treatment recommendations."
+      - "Always include a disclaimer directing patients to consult a qualified clinician."

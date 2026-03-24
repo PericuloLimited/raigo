@@ -1,0 +1,49 @@
+version: "1.0"
+organization: "Example Defence Contractor"
+department: "Systems Engineering"
+last_updated: "2026-03-24T10:00:00Z"
+
+context:
+  environment: "production"
+  data_classification: "restricted"
+  allowed_tools:
+    - "internal_document_store"
+    - "approved_code_repository"
+    - "internal_ticketing"
+
+policies:
+  - id: "CMMC-01"
+    domain: "Controlled Unclassified Information (CUI)"
+    condition: "Always"
+    action: "DENY"
+    directives:
+      - "Never transmit, store, or process Controlled Unclassified Information (CUI) outside of approved internal systems."
+      - "Do not use external cloud APIs, LLM endpoints, or third-party services for any task involving CUI."
+      - "All CUI must remain within the approved boundary defined in the allowed_tools list."
+    enforcement_message: "Action blocked by CMMC-01: CUI handling is restricted to approved internal systems only. This action would violate CMMC Level 2 requirements."
+
+  - id: "CMMC-02"
+    domain: "Access Control"
+    condition: "Always"
+    action: "ENFORCE"
+    directives:
+      - "Only access systems and data explicitly listed in the allowed_tools context."
+      - "Do not attempt to escalate privileges or access systems outside your authorised scope."
+      - "Log all tool calls with timestamps for audit trail compliance."
+
+  - id: "SEC-01"
+    domain: "Code Generation"
+    condition: "Always"
+    action: "ENFORCE"
+    directives:
+      - "Never hardcode credentials, API keys, or secrets in generated code."
+      - "All code must be reviewed by a human engineer before deployment to production."
+      - "Do not generate code that disables or bypasses security controls."
+
+  - id: "SEC-02"
+    domain: "External Communication"
+    condition: "When sending data to external endpoints"
+    action: "DENY"
+    directives:
+      - "Do not send any project names, contract numbers, or technical specifications to external services."
+    enforcement_message: "Action blocked by SEC-02: External data transmission is not permitted for this environment."
