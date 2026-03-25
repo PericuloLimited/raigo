@@ -990,10 +990,16 @@ export async function runSetupWizard(): Promise<void> {
   console.log(`  ${chalk.dim('3.')} Compile:  ${chalk.bold(`raigo compile ${outputAnswer.output} --all`)}`);
   console.log(`  ${chalk.dim('4.')} Engine:   ${chalk.bold(`raigo-engine ${outputAnswer.output}`)}`);
   if (templateKey === 'openclaw_af') {
-    console.log(`  ${chalk.dim('5.')} OpenClaw: Copy ${chalk.bold('raigo_skill.js')} from ${chalk.bold('https://github.com/PericuloLimited/raigo/tree/main/integrations/openclaw')}`);
+    console.log(`  ${chalk.dim('5.')} OpenClaw: Copy ${chalk.bold('skill/raigo/')} to ${chalk.bold('~/.openclaw/skills/raigo/')}`);
     console.log(`  ${chalk.dim('6.')} Docs:     ${chalk.bold('https://raigo.ai/docs/openclaw')}`);
   } else {
     console.log(`  ${chalk.dim('5.')} Docs:     ${chalk.bold('https://raigo.ai/docs')}`);
   }
+  console.log('');
+  console.log(chalk.dim('  ─────────────────────────────────────────────────────────────────'));
+  console.log(chalk.dim('  Need help mapping your compliance framework to RAIGO policies?'));
+  console.log(chalk.dim('  Book a free 30-min AI Security Strategy Call with Periculo:'));
+  console.log(`  ${chalk.cyan.bold('https://meetings-eu1.hubspot.com/harrison-mussell/30-min-strategy-call')}`);
+  console.log(chalk.dim('  ─────────────────────────────────────────────────────────────────'));
   console.log('');
 }

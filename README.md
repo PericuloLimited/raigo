@@ -212,8 +212,8 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for a detailed integration guide.
 |---|---|---|
 | RAIGO CLI | **Available** | Compile, validate, and initialize `.raigo` files |
 | RAIGO Web Generator | **Available** | LLM-powered natural language policy ingestion |
-| RAIGO Engine (Local) | **In Development** | Lightweight binary for local/sidecar deployment |
-| RAIGO Engine (Cloud) | **In Development** | Managed SaaS policy evaluation API |
+| RAIGO Engine (Local) | **Available** | Lightweight binary for local/sidecar deployment |
+| RAIGO Engine (Cloud) | **In Development** | Managed SaaS policy evaluation API — [join the waitlist](https://meetings-eu1.hubspot.com/harrison-mussell/30-min-strategy-call) |
 | VS Code Extension | Planned | Syntax highlighting, linting, live compilation |
 | GitHub Action | Planned | Validate `.raigo` files in CI/CD pipelines |
 | Policy Registry | Planned | Public registry for sharing community policies |
@@ -242,7 +242,7 @@ Please report vulnerabilities to **security@periculo.co.uk**. See our [Security 
 
 The **Periculo Enterprise Control Plane** provides centralized policy management, automatic sync to connected tools, fleet-wide enforcement, and a full audit trail across all deployment models.
 
-[Book a free 15-minute AI Governance Review →](https://periculo.co.uk/book)
+[Book a free 30-minute AI Security Strategy Call →](https://meetings-eu1.hubspot.com/harrison-mussell/30-min-strategy-call)
 
 ---
 

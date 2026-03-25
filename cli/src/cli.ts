@@ -232,6 +232,12 @@ program
     console.log(chalk.dim(`  Skill & hook:   https://github.com/PericuloLimited/raigo/tree/main/integrations/openclaw`));
     console.log(chalk.dim('  Docs:           https://raigo.ai/docs/openclaw'));
     console.log('');
+    console.log(chalk.dim('  ─────────────────────────────────────────────────────────────────'));
+    console.log(chalk.dim('  Want a custom policy review for your organisation?'));
+    console.log(chalk.dim('  Book a free 30-min AI Security Strategy Call:'));
+    console.log(`  ${chalk.cyan.bold('https://meetings-eu1.hubspot.com/harrison-mussell/30-min-strategy-call')}`);
+    console.log(chalk.dim('  ─────────────────────────────────────────────────────────────────'));
+    console.log('');
   });
 
 // ── init ──────────────────────────────────────────────────────────────────────
