@@ -1,12 +1,15 @@
 export interface RaigoCondition {
     trigger?: string;
     data_classification?: string[];
+    keywords?: string[];
+    match?: 'any' | 'all';
     environment?: string[];
     destination?: string;
-    pattern?: string;
     language?: string[];
     anomaly_types?: string[];
     tool_not_in?: string[];
+    action_types?: string[];
+    pattern?: string;
 }
 export interface ComplianceMapping {
     framework: string;
@@ -44,12 +47,20 @@ export interface EvaluationRequest {
     prompt?: string;
     content?: string;
     context?: {
+        action?: string;
+        command?: string;
+        type?: string;
+        tool?: string;
         data_classification?: string[];
         environment?: string;
         destination?: string;
-        tool?: string;
         language?: string;
         anomaly_types?: string[];
+        agent?: string;
+        session?: string;
+        url?: string;
+        amount?: number;
+        currency?: string;
     };
     metadata?: Record<string, unknown>;
 }
@@ -95,9 +106,27 @@ export declare class RaigoEvaluator {
     getPolicies(): RaigoPolicy[];
     evaluate(request: EvaluationRequest): EvaluationResult;
     private ruleMatches;
+    /**
+     * Evaluate a contains-type trigger (prompt_contains / output_contains).
+     * Supports:
+     *   - keywords: list of strings to match (any or all)
+     *   - data_classification: PII, PHI, CLASSIFIED, CUI, PII_REQUEST
+     *   - pattern: regex string
+     */
+    private evaluateContainsTrigger;
+    /**
+     * Match content against a list of keywords.
+     * mode='any': at least one keyword must appear (case-insensitive)
+     * mode='all': all keywords must appear
+     */
+    private matchesKeywords;
     private containsPII;
+    private containsPIIRequest;
     private containsPHI;
     private containsClassified;
     private containsPromptInjection;
+    private containsDestructiveCommand;
+    private containsFinancialAction;
+    private containsExternalContentExecution;
     private buildViolationResponse;
 }
