@@ -1,7 +1,7 @@
 raigo_version: "2.0"
 metadata:
   organisation: "Example Organisation"
-  policy_suite: "OpenClaw Agent Security — OWASP LLM Top 10 WAF"
+  policy_suite: "OpenClaw Agent Security — OWASP LLM Top 10 Agent Firewall"
   version: "1.0.0"
   effective_date: "2026-03-25"
   review_date: "2027-03-25"
@@ -30,7 +30,7 @@ policies:
   # Must run first — catch adversarial inputs before any other rule evaluates.
   # This is the single most important rule for any AI agent.
 
-  - id: "WAF-01"
+  - id: "AF-01"
     domain: "Security"
     title: "Block prompt injection and jailbreak attempts"
     condition:
@@ -47,9 +47,9 @@ policies:
     enforcement_message: "Your request was blocked by the RAIGO security policy. If you believe this is an error, please contact your administrator."
     violation_response:
       http_status: 403
-      error_code: "RAIGO_DENY_WAF01"
+      error_code: "RAIGO_DENY_AF01"
       user_message: "This request was blocked by your agent's security policy."
-      developer_message: "WAF-01: Prompt injection or jailbreak pattern detected. Request blocked per OWASP LLM01."
+      developer_message: "AF-01: Prompt injection or jailbreak pattern detected. Request blocked per OWASP LLM01."
     compliance_mapping:
       - framework: "OWASP_LLM"
         control: "LLM01"
@@ -61,7 +61,7 @@ policies:
   # ─── LAYER 2: SENSITIVE DATA PROTECTION (OWASP LLM02 / LLM06) ────────────────
   # Prevent the agent from leaking personal data it has access to.
 
-  - id: "WAF-02"
+  - id: "AF-02"
     domain: "Data Protection"
     title: "Block sensitive personal data in agent outputs"
     condition:
@@ -78,9 +78,9 @@ policies:
     enforcement_message: "Your request was blocked because the response contained sensitive personal data. This has been logged."
     violation_response:
       http_status: 403
-      error_code: "RAIGO_DENY_WAF02"
+      error_code: "RAIGO_DENY_AF02"
       user_message: "This response was blocked to protect sensitive personal information."
-      developer_message: "WAF-02: PII/PHI detected in agent output. Blocked per OWASP LLM02/LLM06."
+      developer_message: "AF-02: PII/PHI detected in agent output. Blocked per OWASP LLM02/LLM06."
     compliance_mapping:
       - framework: "OWASP_LLM"
         control: "LLM02"
@@ -99,7 +99,7 @@ policies:
   # Agents should not autonomously take irreversible or high-impact actions.
   # This is critical for any agent with write access to systems or data.
 
-  - id: "WAF-03"
+  - id: "AF-03"
     domain: "Agent Safety"
     title: "Block requests to delete, wipe, or destroy data"
     condition:
@@ -116,9 +116,9 @@ policies:
     enforcement_message: "This action was blocked because it could permanently delete or destroy data. Human approval is required."
     violation_response:
       http_status: 403
-      error_code: "RAIGO_DENY_WAF03"
+      error_code: "RAIGO_DENY_AF03"
       user_message: "Destructive actions require human approval. Please confirm before proceeding."
-      developer_message: "WAF-03: Destructive action detected. Blocked per OWASP LLM08 (Excessive Agency)."
+      developer_message: "AF-03: Destructive action detected. Blocked per OWASP LLM08 (Excessive Agency)."
     compliance_mapping:
       - framework: "OWASP_LLM"
         control: "LLM08"
@@ -127,7 +127,7 @@ policies:
     human_review_required: true
     tags: ["owasp", "excessive-agency", "destructive", "critical"]
 
-  - id: "WAF-04"
+  - id: "AF-04"
     domain: "Agent Safety"
     title: "Warn on autonomous financial or payment actions"
     condition:
@@ -154,7 +154,7 @@ policies:
   # ─── LAYER 4: INSECURE OUTPUT HANDLING (OWASP LLM05) ─────────────────────────
   # Prevent the agent from generating or executing malicious code.
 
-  - id: "WAF-05"
+  - id: "AF-05"
     domain: "Output Safety"
     title: "Block unsolicited code execution instructions"
     condition:
@@ -171,9 +171,9 @@ policies:
     enforcement_message: "This request was blocked because it contained potentially unsafe code execution instructions."
     violation_response:
       http_status: 403
-      error_code: "RAIGO_DENY_WAF05"
+      error_code: "RAIGO_DENY_AF05"
       user_message: "This request was blocked for security reasons."
-      developer_message: "WAF-05: Code injection pattern detected in output. Blocked per OWASP LLM05."
+      developer_message: "AF-05: Code injection pattern detected in output. Blocked per OWASP LLM05."
     compliance_mapping:
       - framework: "OWASP_LLM"
         control: "LLM05"
@@ -186,7 +186,7 @@ policies:
   # Ensure users understand they are interacting with AI and cannot rely on it
   # for high-stakes professional decisions.
 
-  - id: "WAF-06"
+  - id: "AF-06"
     domain: "AI Safety"
     title: "Enforce AI output disclosure and professional advice disclaimer"
     condition: "always"
@@ -198,7 +198,7 @@ policies:
       (legal, medical, financial, or safety-critical) without a clear disclaimer.
       For high-stakes decisions, recommend the user consult a qualified human
       professional. Do not express false certainty.
-    enforcement_message: "ENFORCE [WAF-06]: AI-generated content must be clearly disclosed. Do not present as professional advice."
+    enforcement_message: "ENFORCE [AF-06]: AI-generated content must be clearly disclosed. Do not present as professional advice."
     compliance_mapping:
       - framework: "OWASP_LLM"
         control: "LLM09"
@@ -213,7 +213,7 @@ policies:
   # ─── LAYER 6: SUPPLY CHAIN & PLUGIN SAFETY (OWASP LLM03 / LLM07) ────────────
   # Warn when the agent attempts to use external tools or plugins.
 
-  - id: "WAF-07"
+  - id: "AF-07"
     domain: "Security"
     title: "Warn on use of unverified external tools or plugins"
     condition:
@@ -227,7 +227,7 @@ policies:
       sensitive data (PII, credentials, confidential business information) to
       unverified external services. If a tool requests more permissions than
       necessary for the task, refuse and notify the user.
-    enforcement_message: "WARNING [WAF-07]: This agent is attempting to use an external tool. Review the tool's permissions before allowing it to proceed."
+    enforcement_message: "WARNING [AF-07]: This agent is attempting to use an external tool. Review the tool's permissions before allowing it to proceed."
     escalation_contact: "admin@example.com"
     compliance_mapping:
       - framework: "OWASP_LLM"

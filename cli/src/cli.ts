@@ -184,27 +184,27 @@ program
     await runSetupWizard();
   });
 
-// ── openclaw (zero-friction WAF setup) ───────────────────────────────────────
+// ── openclaw (zero-friction Agent Firewall setup) ───────────────────────────────────────
 program
   .command('openclaw')
   .description('Generate an OWASP LLM Top 10 security policy for your OpenClaw agent in seconds')
-  .option('-o, --output <file>', 'Output file path', 'openclaw_waf.raigo')
+  .option('-o, --output <file>', 'Output file path', 'openclaw_af.raigo')
   .option('--org <name>', 'Organisation name', 'My Organisation')
   .option('--domain <domain>', 'Email domain for escalation contacts', 'example.com')
   .option('--no-banner', 'Suppress the RAIGO banner')
   .action(async (options: any) => {
     if (options.banner !== false) printBanner();
 
-    console.log(chalk.bold('  OpenClaw WAF Setup\n'));
+    console.log(chalk.bold('  OpenClaw Agent Firewall Setup\n'));
     console.log(chalk.dim('  Generating OWASP LLM Top 10 security policy for your OpenClaw agent...\n'));
 
-    const { generateOpenClawWAF } = await import('./wizard');
+    const { generateOpenClawAF } = await import('./wizard');
     const today = new Date();
     const reviewDate = new Date(today);
     reviewDate.setFullYear(reviewDate.getFullYear() + 1);
     const formatDate = (d: Date) => d.toISOString().split('T')[0];
 
-    const content = generateOpenClawWAF(options.org, options.domain, formatDate(today), formatDate(reviewDate));
+    const content = generateOpenClawAF(options.org, options.domain, formatDate(today), formatDate(reviewDate));
     const outPath = path.resolve(process.cwd(), options.output);
 
     if (fs.existsSync(outPath)) {
@@ -226,10 +226,10 @@ program
     console.log('');
     console.log(chalk.bold('  Next steps:\n'));
     console.log(`  ${chalk.dim('1.')} Start the engine:  ${chalk.bold(`raigo-engine ${options.output}`)}`);
-    console.log(`  ${chalk.dim('2.')} Add the skill:     Copy ${chalk.bold('raigo_skill.js')} to ${chalk.bold('~/.openclaw/skills/')}`);
+    console.log(`  ${chalk.dim('2.')} Add the skill:     Copy ${chalk.bold('skill/raigo/')} to ${chalk.bold('~/.openclaw/skills/raigo/')}`);
     console.log(`  ${chalk.dim('3.')} That\'s it.         Your OpenClaw agent is now protected.`);
     console.log('');
-    console.log(chalk.dim(`  Skill download: https://github.com/PericuloLimited/raigo/tree/main/integrations/openclaw`));
+    console.log(chalk.dim(`  Skill & hook:   https://github.com/PericuloLimited/raigo/tree/main/integrations/openclaw`));
     console.log(chalk.dim('  Docs:           https://raigo.ai/docs/openclaw'));
     console.log('');
   });

@@ -70,6 +70,7 @@ export interface EvaluationRequest {
     command?: string;
     type?: string;
     tool?: string;
+    tool_invocation?: string;
     data_classification?: string[];
     environment?: string;
     destination?: string;
@@ -419,14 +420,22 @@ export class RaigoEvaluator {
     }
 
     // ── tool_invocation ───────────────────────────────────────────────────────
-    // Fires when a tool is invoked that is NOT in the approved list
+    // Fires when an EXTERNAL tool is explicitly invoked.
+    // context.tool = the calling platform (e.g. 'openclaw') — NOT the external tool.
+    // context.tool_invocation = the external tool being invoked (e.g. 'external_api').
+    // This rule only fires when context.tool_invocation is explicitly set.
     if (trigger === 'tool_invocation') {
-      if (condition.tool_not_in && ctx?.tool) {
-        return !condition.tool_not_in.includes(ctx.tool);
+      const externalTool = (ctx as Record<string, unknown>)?.tool_invocation as string | undefined;
+      if (!externalTool) {
+        // No external tool invocation signalled — do not fire
+        return false;
       }
-      // If no approved list is specified, fire on any tool invocation
-      if (ctx?.type === 'external_tool' || ctx?.action === 'tool_invocation') return true;
-      return false;
+      if (condition.tool_not_in && condition.tool_not_in.length > 0) {
+        // Fire only if the external tool is not in the approved list
+        return !condition.tool_not_in.includes(externalTool);
+      }
+      // No approved list — fire on any explicit external tool invocation
+      return true;
     }
 
     // ── destructive_action ────────────────────────────────────────────────────

@@ -51,6 +51,7 @@ export interface EvaluationRequest {
         command?: string;
         type?: string;
         tool?: string;
+        tool_invocation?: string;
         data_classification?: string[];
         environment?: string;
         destination?: string;

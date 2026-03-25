@@ -41,7 +41,7 @@ Your Application
           audit_log, http_status)
 ```
 
-This is the same architectural pattern as a Web Application Firewall (WAF) — but for AI. The key difference from system prompts is that enforcement is **deterministic**. A `DENY` rule in a `.raigo` file cannot be overridden by prompt injection, model drift, or a creative user. The engine blocks the request before the LLM ever sees it.
+This is the same architectural pattern as a Web Application Firewall (Agent Firewall) — but for AI. The key difference from system prompts is that enforcement is **deterministic**. A `DENY` rule in a `.raigo` file cannot be overridden by prompt injection, model drift, or a creative user. The engine blocks the request before the LLM ever sees it.
 
 ---
 

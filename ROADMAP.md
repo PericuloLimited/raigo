@@ -6,7 +6,7 @@ This document outlines the development roadmap for the RAIGO project. RAIGO is b
 
 ## v1.0 — The Standard & The Engine (Current)
 
-The foundation: a stable, well-specified file format, an intelligent compiler, and a lightweight runtime engine that provides WAF-like enforcement for AI traffic.
+The foundation: a stable, well-specified file format, an intelligent compiler, and a lightweight runtime engine that provides Agent Firewall-like enforcement for AI traffic.
 
 **Delivered:**
 - `.raigo` format specification v2.0 with structured conditions, compliance mappings, severity levels, and platform overrides.

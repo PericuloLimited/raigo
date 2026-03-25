@@ -1,6 +1,6 @@
 # RAIGO + OpenClaw Integration
 
-> **Secure your OpenClaw agent in under 2 minutes.** RAIGO acts as a WAF (Web Application Firewall) for your agent — evaluating every prompt and action against your security policy before it reaches the LLM. No configuration required.
+> **Secure your OpenClaw agent in under 2 minutes.** RAIGO acts as an **Agent Firewall (AF)** — evaluating every prompt and action against your organisation's security policy before it executes. No configuration required.
 
 ---
 
@@ -12,11 +12,11 @@ If you just want to protect your OpenClaw agent with sensible security defaults 
 # Install the RAIGO CLI
 npm install -g @periculo/raigo
 
-# Generate your security policy (5 seconds, no questions asked)
+# Generate your Agent Firewall policy (5 seconds, no questions asked)
 raigo openclaw --org "My Company" --domain mycompany.com
 
 # Start the engine
-raigo-engine openclaw_waf.raigo
+raigo-engine openclaw_af.raigo
 ```
 
 Your agent is now protected. That's it.
@@ -25,75 +25,121 @@ Your agent is now protected. That's it.
 
 | Rule | Protects Against | OWASP Reference |
 |---|---|---|
-| WAF-01 | Prompt injection, jailbreaks, DAN attacks | LLM01 |
-| WAF-02 | Personal data leaking in agent outputs | LLM02 / LLM06 |
-| WAF-03 | Destructive actions (delete, wipe, destroy) | LLM08 |
-| WAF-04 | Autonomous financial transactions | LLM08 |
-| WAF-05 | Code injection via external content | LLM05 |
-| WAF-06 | Overreliance on AI for professional advice | LLM09 |
-| WAF-07 | Unverified external tools and plugins | LLM03 / LLM07 |
+| AF-01 | Prompt injection, jailbreaks, DAN attacks | LLM01 |
+| AF-02 | Personal data leaking in agent outputs | LLM02 / LLM06 |
+| AF-03 | Destructive actions (delete, wipe, destroy) | LLM08 |
+| AF-04 | Autonomous financial transactions | LLM08 |
+| AF-05 | Code injection via external content | LLM05 |
+| AF-06 | Overreliance on AI for professional advice | LLM09 |
+| AF-07 | Unverified external tools and plugins | LLM03 / LLM07 |
 
 ---
 
-## Step 2: Add the RAIGO Skill to OpenClaw
+## How the Integration Works
 
-Copy [`raigo_skill.js`](./raigo_skill.js) into your OpenClaw skills directory:
-
-```bash
-# macOS / Linux
-cp raigo_skill.js ~/.openclaw/skills/raigo.js
-
-# Windows
-copy raigo_skill.js %USERPROFILE%\.openclaw\skills\raigo.js
-```
-
-Then add the skill to your agent's `agent.json`:
-
-```json
-{
-  "agent": {
-    "name": "My Agent",
-    "skills": ["raigo"],
-    "raigo": {
-      "engine_url": "http://localhost:8181",
-      "mode": "enforce",
-      "block_on_error": true
-    }
-  }
-}
-```
-
----
-
-## How It Works
-
-Every time your OpenClaw agent is about to send a prompt to an LLM, the RAIGO skill intercepts it first:
+RAIGO integrates with OpenClaw using two complementary layers:
 
 ```
-User Input
-    │
-    ▼
-OpenClaw Agent
-    │
-    │  (before every LLM call)
-    ▼
-RAIGO Engine ──── DENY ────► Blocked (403 + structured violation response)
-    │
-    │  ALLOW
-    ▼
-LLM API (OpenAI, Anthropic, etc.)
-    │
-    ▼
+Inbound Message
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│  Layer 1: RAIGO Hook (message:received) │  ← Early warning, screens raw input
+│  Fires before agent sees the message    │
+└─────────────────────────────────────────┘
+      │
+      ▼
+Agent (Pi) processes message
+      │
+      ▼
+┌─────────────────────────────────────────┐
+│  Layer 2: RAIGO Skill (SKILL.md)        │  ← Primary enforcement
+│  Agent calls engine before each action  │
+└─────────────────────────────────────────┘
+      │
+      ├──► RAIGO Engine evaluates ──► DENY ──► Agent stops, explains to user
+      │                           └──► ALLOW ──► Action executes
+      ▼
 Response to user
 ```
 
-The evaluation happens in **under 2ms** and is **deterministic** — the engine does not ask an LLM whether something is allowed. It reads the rules and returns a binary decision. A `DENY` rule cannot be overridden by prompt injection, model drift, or a creative user.
+### Layer 1 — The Hook (Inbound Screening)
+
+The RAIGO hook fires on OpenClaw's `message:received` event — before the agent sees the message. It calls the RAIGO Engine with the raw inbound content and pushes a warning back to the user if a DENY rule fires (e.g., a prompt injection attempt is detected in the message itself).
+
+This is the **earliest possible interception point** in OpenClaw's architecture.
+
+### Layer 2 — The Skill (Agent-Cooperative Enforcement)
+
+The RAIGO skill (`SKILL.md`) injects instructions into the agent's context. The agent is instructed to call the RAIGO Engine before executing any sensitive action — shell commands, file deletions, external API calls, database operations, financial transactions, and responses containing personal data.
+
+This is the **primary enforcement layer**. Because OpenClaw's agent (Pi) is instruction-following, the skill provides deterministic, policy-driven enforcement for the vast majority of real-world use cases.
+
+---
+
+## Step-by-Step Setup
+
+### Step 1: Generate your policy
+
+```bash
+npm install -g @periculo/raigo
+raigo openclaw --org "My Company" --domain mycompany.com
+```
+
+This creates `openclaw_af.raigo` in your current directory.
+
+### Step 2: Start the RAIGO Engine
+
+```bash
+raigo-engine openclaw_af.raigo
+```
+
+Verify it is running:
+
+```bash
+curl -s http://localhost:8181/v1/health
+```
+
+### Step 3: Install the RAIGO Skill
+
+Copy the skill into your OpenClaw skills directory:
+
+```bash
+# macOS / Linux
+cp -r skill/raigo ~/.openclaw/skills/raigo
+
+# Windows
+xcopy /E /I skill\raigo %USERPROFILE%\.openclaw\skills\raigo
+```
+
+Move your policy file to the standard location:
+
+```bash
+mv openclaw_af.raigo ~/.openclaw/openclaw_af.raigo
+```
+
+### Step 4: Install the RAIGO Hook (Optional but Recommended)
+
+```bash
+# Copy the hook to your managed hooks directory
+cp -r hook/raigo-af ~/.openclaw/hooks/raigo-af
+
+# Enable it
+openclaw hooks enable raigo-af
+
+# Verify
+openclaw hooks list
+```
+
+### Step 5: Restart OpenClaw
+
+Restart your OpenClaw gateway to load the new skill and hook. The agent will now call RAIGO before every sensitive action.
 
 ---
 
 ## Customising Your Policy
 
-The generated `openclaw_waf.raigo` file is a standard RAIGO policy file. You can open it in any text editor and add your own rules. For example, to prevent the agent from discussing competitor products:
+The generated `openclaw_af.raigo` file is a standard RAIGO policy file. You can open it in any text editor and add your own rules. For example, to prevent the agent from discussing competitor products:
 
 ```yaml
 - id: "BIZ-01"
@@ -109,6 +155,8 @@ The generated `openclaw_waf.raigo` file is a standard RAIGO policy file. You can
   enforcement_message: "WARNING: This query relates to a competitor product."
 ```
 
+The engine hot-reloads changes within 5 seconds — no restart needed.
+
 For a fully guided setup with industry-specific templates (Healthcare, Defence, Finance), run:
 
 ```bash
@@ -117,40 +165,22 @@ raigo setup
 
 ---
 
-## Evaluation Request Format
+## Violation Response Format
 
-The skill sends this payload to the RAIGO Engine on every agent action:
-
-```json
-{
-  "prompt": "The full prompt text being sent to the LLM",
-  "context": {
-    "environment": "production",
-    "tool": "openclaw",
-    "data_classification": [],
-    "agent_name": "My Agent"
-  }
-}
-```
-
----
-
-## Violation Response
-
-When a rule fires, the engine returns a structured response your code can handle:
+When a rule fires, the engine returns a structured response:
 
 ```json
 {
   "action": "DENY",
   "http_status": 403,
-  "error_code": "RAIGO_DENY_WAF01",
+  "error_code": "RAIGO_DENY_AF01",
   "user_message": "This request was blocked by your agent's security policy.",
-  "developer_message": "WAF-01: Prompt injection or jailbreak pattern detected. Request blocked per OWASP LLM01.",
-  "triggered_rules": ["WAF-01"],
+  "developer_message": "AF-01: Prompt injection or jailbreak pattern detected. Request blocked per OWASP LLM01.",
+  "triggered_rules": ["AF-01"],
   "audit_log": {
     "timestamp": "2026-03-25T10:00:00.000Z",
     "policy_version": "1.0.0",
-    "rule_id": "WAF-01",
+    "rule_id": "AF-01",
     "severity": "critical",
     "action": "DENY"
   }
@@ -159,25 +189,13 @@ When a rule fires, the engine returns a structured response your code can handle
 
 ---
 
-## Configuration Options
-
-| Option | Default | Description |
-|---|---|---|
-| `engine_url` | `http://localhost:8181` | URL of the RAIGO Engine |
-| `mode` | `enforce` | `enforce` blocks on DENY; `audit` logs but allows all |
-| `block_on_error` | `true` | Block if the engine is unreachable (fail-safe) |
-| `timeout_ms` | `2000` | Max time to wait for engine response |
-| `log_violations` | `true` | Log all violations to console |
-
----
-
 ## Deployment Options
 
 | Model | How | Best For |
 |---|---|---|
-| **Local** | `raigo-engine openclaw_waf.raigo` | Development, single-user agents |
+| **Local** | `raigo-engine openclaw_af.raigo` | Development, single-user agents |
 | **Docker** | `docker run -v $(pwd):/policy periculo/raigo-engine` | Production, containerised deployments |
-| **RAIGO Cloud** | Point `engine_url` at your cloud endpoint | Teams, managed governance, no ops |
+| **RAIGO Cloud** | Point engine at your cloud endpoint | Teams, managed governance, no ops |
 
 ---
 
@@ -186,4 +204,6 @@ When a rule fires, the engine returns a structured response your code can handle
 - [RAIGO GitHub](https://github.com/PericuloLimited/raigo)
 - [Full Documentation](https://raigo.ai/docs/openclaw)
 - [OWASP Top 10 for LLM Applications 2025](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+- [OpenClaw Hooks Documentation](https://docs.openclaw.ai/automation/hooks)
+- [OpenClaw Skills Documentation](https://docs.openclaw.ai/tools/skills)
 - [Report an Issue](https://github.com/PericuloLimited/raigo/issues)

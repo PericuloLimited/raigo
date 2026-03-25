@@ -2,13 +2,13 @@
 
 RAIGO is designed to solve a fundamental problem in AI governance: **how do you enforce consistent policies across a highly fragmented ecosystem of AI tools, agents, and models?**
 
-To solve this, RAIGO provides a flexible architecture that meets AI applications wherever they are deployed. The core of the system is the **RAIGO Engine** — a lightweight, high-performance policy evaluation server that acts like a Web Application Firewall (WAF) for AI traffic.
+To solve this, RAIGO provides a flexible architecture that meets AI applications wherever they are deployed. The core of the system is the **RAIGO Engine** — a lightweight, high-performance policy evaluation server that acts like a Web Application Firewall (Agent Firewall) for AI traffic.
 
 Because different applications have different latency, privacy, and architectural requirements, RAIGO supports four distinct deployment models.
 
 ---
 
-## The Core Concept: The AI WAF
+## The Core Concept: The AI Agent Firewall
 
 At its heart, RAIGO is a policy engine. You feed it a `.raigo` file (which contains your declarative governance rules), and you place it in the path of your AI traffic.
 

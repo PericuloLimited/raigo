@@ -1,6 +1,7 @@
 ---
 name: raigo
-description: RAIGO WAF — AI policy enforcement for OpenClaw agents. Use this skill to check whether a proposed action, tool call, or response is permitted by the organisation's RAIGO policy before executing it. Automatically blocks prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks.
+description: "RAIGO Agent Firewall — declarative AI policy enforcement for OpenClaw agents. Evaluates every sensitive action against your organisation's security policy before it executes. Blocks prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks."
+homepage: https://raigo.ai/docs/openclaw
 metadata:
   {
     "openclaw":
@@ -21,9 +22,9 @@ metadata:
   }
 ---
 
-# RAIGO WAF — AI Policy Enforcement
+# RAIGO Agent Firewall
 
-RAIGO is a policy engine that evaluates every agent action against a set of rules before it executes. It works like a Web Application Firewall (WAF) but for AI agents — blocking prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks.
+RAIGO is a policy engine that evaluates agent actions against a set of declarative rules before they execute. It acts as an **Agent Firewall (AF)** — blocking prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks in under 2ms per evaluation.
 
 ## How It Works
 
@@ -44,103 +45,138 @@ curl -s http://localhost:8181/v1/health
 If it is not running, start it:
 
 ```bash
-raigo-engine ~/.openclaw/openclaw_waf.raigo
+raigo-engine ~/.openclaw/openclaw_af.raigo
 ```
 
-If you do not have a policy file, generate one:
+If you do not have a policy file yet, generate one in 5 seconds:
 
 ```bash
 npx @periculo/raigo openclaw --org "Your Organisation" --domain yourdomain.com
-raigo-engine openclaw_waf.raigo
+raigo-engine openclaw_af.raigo
 ```
 
-## When to Check RAIGO
+## When to Call RAIGO
 
 You MUST call the RAIGO engine before:
 
-1. **Executing any shell command** — especially anything involving `rm`, `delete`, `drop`, `truncate`, `format`, `wipe`, `kill`, `sudo`, or system-level operations
-2. **Sending data externally** — any action that sends data to an external URL, email, API, or service
-3. **Accessing credentials or secrets** — reading `.env` files, API keys, passwords, tokens
-4. **Processing user-provided content that will be executed** — any content that will be passed to `eval`, `exec`, or a shell
-5. **Responding with personal data** — if the response contains names, emails, phone numbers, addresses, or other PII
-6. **Financial or transactional actions** — payments, transfers, purchases, subscriptions
+1. **Executing any shell command** (exec tool, terminal commands)
+2. **Deleting, modifying, or moving files**
+3. **Making any external API call or HTTP request**
+4. **Accessing, reading, or writing a database**
+5. **Sending any message, email, or notification**
+6. **Processing or returning data that may contain personal information**
+7. **Any action involving financial transactions or payments**
 
-For routine read-only operations (reading files, searching, answering questions), RAIGO checks are optional but recommended.
+You do NOT need to call RAIGO for:
+- Reading files you have already been given access to
+- Internal reasoning and planning steps
+- Responding to simple factual questions with no external actions
 
 ## How to Call RAIGO
 
-Use the exec tool to call the RAIGO engine API:
+Use the exec tool to call the engine. Replace `<prompt_text>` with the action you are about to take:
 
 ```bash
 curl -s -X POST http://localhost:8181/v1/evaluate \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "<the user request or action description>",
+    "prompt": "<prompt_text>",
     "context": {
-      "action": "<tool name or action type>",
-      "agent": "openclaw",
-      "session": "<session id if available>"
+      "tool": "openclaw",
+      "environment": "production"
     }
   }'
 ```
 
-Parse the response:
+## Interpreting the Response
+
+The engine returns a JSON object. Read the `action` field:
 
 ```json
 {
-  "decision": "DENY",
-  "rule": "WAF-01",
-  "severity": "CRITICAL",
-  "message": "Prompt injection attempt detected",
-  "userMessage": "I cannot process this request as it appears to be attempting to override my instructions.",
-  "compliance": ["OWASP LLM01"]
+  "action": "DENY",
+  "http_status": 403,
+  "error_code": "RAIGO_DENY_AF01",
+  "user_message": "This request was blocked by your agent security policy.",
+  "developer_message": "AF-01: Prompt injection pattern detected. Blocked per OWASP LLM01.",
+  "triggered_rules": ["AF-01"],
+  "audit_log": {
+    "timestamp": "2026-03-25T10:00:00.000Z",
+    "rule_id": "AF-01",
+    "severity": "critical"
+  }
 }
 ```
 
-## Decision Handling
+**If `action` is `DENY`:**
+- Do NOT execute the action
+- Tell the user: "I cannot complete this request. It was blocked by your organisation's security policy. Rule: [error_code]. [user_message]"
+- Do not attempt to work around the block or rephrase the request
 
-### If decision is ALLOW
-Proceed with the action normally. No action required.
+**If `action` is `WARN`:**
+- Proceed with the action
+- Tell the user: "Note: This action triggered a security warning. [user_message]"
 
-### If decision is DENY
-1. Do NOT execute the requested action
-2. Tell the user: use the `userMessage` from the RAIGO response if present, otherwise say: "I cannot complete this request as it has been blocked by the organisation's AI policy."
-3. Include the rule ID in your explanation (e.g., "This was blocked by rule WAF-01")
-4. Do not reveal the full technical details of the policy to the user
+**If `action` is `ALLOW`:**
+- Proceed normally
 
-### If decision is WARN
-1. Proceed with the action
-2. Inform the user that the action triggered a policy warning
-3. Log the warning if a logging mechanism is available
-
-### If RAIGO engine is unreachable
-If `curl` returns a connection error (the engine is not running):
-1. Default to **DENY** for any high-risk action (destructive commands, external data sends, credential access)
-2. Inform the user: "The RAIGO policy engine is not running. For safety, I am blocking this action until the engine is available."
-3. Suggest the user start the engine: `raigo-engine ~/.openclaw/openclaw_waf.raigo`
+**If the engine is unreachable (connection refused):**
+- Stop and tell the user: "The RAIGO Agent Firewall is not running. Please start it with: `raigo-engine ~/.openclaw/openclaw_af.raigo`"
+- Do NOT proceed with the action (fail-safe by default)
 
 ## Example Workflow
 
-User asks: "Delete all the log files in /var/log"
+When a user asks you to "delete all log files older than 30 days":
 
-1. Before executing, call RAIGO:
+1. Before executing, call RAIGO with the proposed action:
+   ```bash
+   curl -s -X POST http://localhost:8181/v1/evaluate \
+     -H "Content-Type: application/json" \
+     -d '{"prompt": "delete all log files older than 30 days using find and rm"}'
+   ```
+
+2. If the response `action` is `ALLOW`, proceed with the deletion.
+3. If the response `action` is `DENY`, stop and explain: "This action was blocked by your security policy (AF-03: Destructive action detected). If you intended this, please update your RAIGO policy to allow it."
+
+## Checking RAIGO Status
+
+At the start of any session where you will be taking actions, check that RAIGO is running:
+
 ```bash
-curl -s -X POST http://localhost:8181/v1/evaluate \
-  -H "Content-Type: application/json" \
-  -d '{"prompt": "Delete all log files in /var/log", "context": {"action": "exec", "command": "rm -rf /var/log/*"}}'
+curl -s http://localhost:8181/v1/health | python3 -m json.tool
 ```
 
-2. RAIGO returns: `{"decision": "DENY", "rule": "WAF-03", "userMessage": "Destructive file system operations require explicit confirmation and are blocked by default."}`
+If it is not running, inform the user immediately before proceeding with any actions.
 
-3. You respond: "I cannot delete those files — this action has been blocked by your organisation's AI policy (rule WAF-03: Destructive Action Prevention). If you intended this, please disable the WAF-03 rule in your `.raigo` policy file and restart the engine."
+## Policy File Location
 
-## Customising Policies
+The default policy file location is `~/.openclaw/openclaw_af.raigo`. You can also check what policies are loaded:
 
-To view the currently loaded rules:
 ```bash
 curl -s http://localhost:8181/v1/policies | python3 -m json.tool
 ```
 
-To update your policy, edit `~/.openclaw/openclaw_waf.raigo` and restart the engine. The engine also supports hot-reload — changes take effect within 5 seconds without restarting.
+## Updating Your Policy
 
-For more information: https://raigo.ai
+To add a custom rule, edit `~/.openclaw/openclaw_af.raigo`. The engine hot-reloads changes within 5 seconds — no restart needed. For example, to block discussion of competitor products:
+
+```yaml
+- id: "BIZ-01"
+  domain: "Business Policy"
+  title: "Do not discuss competitor products"
+  condition:
+    trigger: "prompt_contains"
+    keywords: ["CompetitorA", "CompetitorB"]
+    match: "any"
+  action: "WARN"
+  severity: "low"
+  directive: "Do not make comparisons with competitor products."
+  enforcement_message: "WARNING: This query relates to a competitor product."
+```
+
+## More Information
+
+- [RAIGO Documentation](https://raigo.ai/docs)
+- [OpenClaw Integration Guide](https://raigo.ai/docs/openclaw)
+- [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+- [Report an Issue](https://github.com/PericuloLimited/raigo/issues)
