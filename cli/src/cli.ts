@@ -184,6 +184,56 @@ program
     await runSetupWizard();
   });
 
+// ── openclaw (zero-friction WAF setup) ───────────────────────────────────────
+program
+  .command('openclaw')
+  .description('Generate an OWASP LLM Top 10 security policy for your OpenClaw agent in seconds')
+  .option('-o, --output <file>', 'Output file path', 'openclaw_waf.raigo')
+  .option('--org <name>', 'Organisation name', 'My Organisation')
+  .option('--domain <domain>', 'Email domain for escalation contacts', 'example.com')
+  .option('--no-banner', 'Suppress the RAIGO banner')
+  .action(async (options: any) => {
+    if (options.banner !== false) printBanner();
+
+    console.log(chalk.bold('  OpenClaw WAF Setup\n'));
+    console.log(chalk.dim('  Generating OWASP LLM Top 10 security policy for your OpenClaw agent...\n'));
+
+    const { generateOpenClawWAF } = await import('./wizard');
+    const today = new Date();
+    const reviewDate = new Date(today);
+    reviewDate.setFullYear(reviewDate.getFullYear() + 1);
+    const formatDate = (d: Date) => d.toISOString().split('T')[0];
+
+    const content = generateOpenClawWAF(options.org, options.domain, formatDate(today), formatDate(reviewDate));
+    const outPath = path.resolve(process.cwd(), options.output);
+
+    if (fs.existsSync(outPath)) {
+      console.log(chalk.yellow(`  ⚠ File already exists: ${outPath}`));
+      console.log(chalk.dim('    Delete it first or use --output to specify a different path.'));
+      process.exit(1);
+    }
+
+    fs.writeFileSync(outPath, content, 'utf8');
+
+    // Count rules
+    const ruleMatches = content.match(/^  - id:/gm);
+    const ruleCount = ruleMatches ? ruleMatches.length : 0;
+
+    console.log(chalk.green(`  ✓ Policy file created: ${outPath}`));
+    console.log(chalk.dim(`  ✓ ${ruleCount} OWASP LLM security rules included`));
+    console.log(chalk.dim('  ✓ Covers: LLM01 Prompt Injection, LLM02 Sensitive Data, LLM05 Output Handling,'));
+    console.log(chalk.dim('            LLM08 Excessive Agency, LLM09 Overreliance, LLM03/07 Plugin Safety'));
+    console.log('');
+    console.log(chalk.bold('  Next steps:\n'));
+    console.log(`  ${chalk.dim('1.')} Start the engine:  ${chalk.bold(`raigo-engine ${options.output}`)}`);
+    console.log(`  ${chalk.dim('2.')} Add the skill:     Copy ${chalk.bold('raigo_skill.js')} to ${chalk.bold('~/.openclaw/skills/')}`);
+    console.log(`  ${chalk.dim('3.')} That\'s it.         Your OpenClaw agent is now protected.`);
+    console.log('');
+    console.log(chalk.dim(`  Skill download: https://github.com/PericuloLimited/raigo/tree/main/integrations/openclaw`));
+    console.log(chalk.dim('  Docs:           https://raigo.ai/docs/openclaw'));
+    console.log('');
+  });
+
 // ── init ──────────────────────────────────────────────────────────────────────
 program
   .command('init [name]')
