@@ -486,7 +486,7 @@ function verifySignature(payloadBody, signatureHeader, secret) {
 To receive raigo webhook events in n8n:
 
 1. Create a **Webhook** node in n8n and set the HTTP Method to `POST`.
-2. Copy the webhook URL from n8n and paste it into your raigo cloud webhook configuration.
+2. Copy the webhook URL from n8n and set it as the `RAIGO_WEBHOOK_URL` environment variable on your self-hosted engine. If using raigo cloud, paste it into the Webhooks settings page.
 3. Add a **Function** node after the Webhook node to verify the signature:
 
 ```javascript
