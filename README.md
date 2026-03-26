@@ -8,6 +8,7 @@
 [![Version](https://img.shields.io/badge/version-0.3.0-orange.svg)](https://github.com/PericuloLimited/raigo/releases)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![npm](https://img.shields.io/npm/v/@periculo/raigo.svg)](https://www.npmjs.com/package/@periculo/raigo)
+[![Live Demo](https://img.shields.io/badge/live%20demo-cloud.raigo.ai%2Fdemo-orange)](https://cloud.raigo.ai/demo)
 
 [Specification](./SPECIFICATION.md) · [Documentation](#documentation) · [Examples](./examples/) · [Architecture](./ARCHITECTURE.md) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
 
@@ -211,7 +212,7 @@ See [ARCHITECTURE.md](./ARCHITECTURE.md) for a detailed integration guide.
 |---|---|---|
 | raigo CLI | **Available** | Compile, validate, and initialise `.raigo` files |
 | raigo engine (local) | **Available** | Lightweight service for local/sidecar deployment |
-| raigo cloud | **Available** | Managed SaaS policy evaluation — [cloud.raigo.ai](https://cloud.raigo.ai) |
+| raigo cloud | **Available** | Managed SaaS policy evaluation — [cloud.raigo.ai](https://cloud.raigo.ai) · [**Try live demo →**](https://cloud.raigo.ai/demo) |
 | VS Code extension | Planned | Syntax highlighting, linting, live compilation |
 | GitHub Action | Planned | Validate `.raigo` files in CI/CD pipelines |
 | Policy registry | Planned | Public registry for sharing community policies |
