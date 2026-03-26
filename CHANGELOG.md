@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-03-26
+
+### Added
+- `docs/quickstart.md` — REST API, Python, LangChain, and n8n working examples with error handling and fail-open/fail-closed guidance
+- `docs/testing-framework.md` — `raigo test` CLI specification, YAML test case format, and CI/CD integration guide
+- `docs/compliance-mappings.md` — complete compliance reference for EU AI Act, DORA, HIPAA, ISO 42001, NIST AI RMF, GDPR, SOC 2, and 10+ additional frameworks
+- `docs/webhook-schema.md` — stable, frozen JSON schemas for evaluate request/response, webhook events, and error responses; includes n8n integration guide and signature verification examples
+- `docs/conflict-resolution.md` — formal specification of the most-restrictive-wins algorithm, priority override field, decision table, and worked examples
+
+### Changed
+- Version badge updated from 1.0.0 to 0.2.0 (aligning with pre-1.0 open-source convention)
+- README: added Documentation section linking to all new docs
+
+### Fixed
+- Compliance reference format standardised across all examples (e.g. `EUAIA-Art.14` not `EUAIA-Art14`)
+
+
 ## [Unreleased]
 
 ### Added

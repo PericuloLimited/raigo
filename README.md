@@ -5,7 +5,7 @@
 **The open standard and policy engine for AI agent governance.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/PericuloLimited/raigo/releases)
+[![Version](https://img.shields.io/badge/version-0.2.0-orange.svg)](https://github.com/PericuloLimited/raigo/releases)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![npm](https://img.shields.io/npm/v/@periculo/raigo.svg)](https://www.npmjs.com/package/@periculo/raigo)
 
