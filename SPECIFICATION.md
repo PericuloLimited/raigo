@@ -1,17 +1,27 @@
-# RAIGO Specification — AI Policy Definition Language (AIPDL) v2.0
+# raigo Specification — AI Policy Definition Language v0.3.0
 
-> The declarative standard for AI agent governance. Define your policies once. Compile to every AI tool.
+> The open standard for AI agent governance. Define your policies once. Compile to every AI tool.
 
-**Maintained by:** [Periculo](https://periculo.co.uk) | **Format:** `.raigo` | **Schema Version:** 2.0  
+**Maintained by:** [Periculo](https://periculo.co.uk) | **Format:** `.raigo` | **Schema Version:** 0.3.0  
 **Website:** [raigo.ai](https://raigo.ai) | **Repository:** [github.com/PericuloLimited/raigo](https://github.com/PericuloLimited/raigo)
+
+---
+
+## This Document
+
+This specification defines the `.raigo` file format — the open standard at the heart of the raigo project. **The format specification is the primary open-source contribution.** The compiler CLI, the self-hosted engine, and the [raigo cloud](https://cloud.raigo.ai) managed service are all implementations built on top of this standard. They are provided as reference implementations, but they are not the standard itself.
+
+Anyone may implement this specification. If you are building an AI tool, agent framework, or workflow platform, you can add native `.raigo` support so your users can govern it with a standard policy file — without depending on any Periculo product. The specification is MIT-licensed and versioned independently of any implementation.
+
+> **Stability guarantee:** Fields marked as `Required` in this specification will not be removed or renamed in minor versions. New optional fields may be added in minor versions. Breaking changes require a major version increment and a minimum 6-month deprecation notice.
 
 ---
 
 ## Overview
 
-A `.raigo` file is a YAML-based policy definition file. It is the single source of truth for an organisation's AI usage policies. The RAIGO compiler reads this file and produces tool-native outputs for every major AI platform — without requiring you to maintain separate policy configurations in each tool.
+A `.raigo` file is a YAML-based policy definition document. It is the single source of truth for an organisation's AI usage policies. A raigo-compatible compiler reads this file and produces tool-native enforcement artifacts for every major AI platform — without requiring you to maintain separate policy configurations in each tool.
 
-The design philosophy is borrowed from Rego/OPA: **declarative, not imperative**. You express *what* the rule is, not *how* to enforce it. The compiler handles the translation.
+The design philosophy is borrowed from Rego/OPA: **declarative, not imperative**. You express *what* the rule is, not *how* to enforce it. The compiler or engine handles the translation.
 
 **Core design principle: every rule is atomic.** One rule ID. One directive. One action. This ensures each rule can be independently evaluated, logged, and enforced — with no ambiguity about which specific instruction was triggered.
 
@@ -22,11 +32,13 @@ The design philosophy is borrowed from Rego/OPA: **declarative, not imperative**
 A `.raigo` file has three top-level sections:
 
 ```yaml
-raigo_version: "2.0"
+raigo_version: "0.3.0"
 metadata:    # Who owns this policy, when it was written, compliance context
 context:     # The environment: tools, data classifications, networks, servers
 policies:    # The rules: atomic, one directive per rule
 ```
+
+The `raigo_version` field is required and must match the specification version the file was written against. Implementations should validate this field and warn if the version is newer than the implementation supports.
 
 ---
 
@@ -57,7 +69,7 @@ metadata:
 |---|---|---|
 | `organisation` | Yes | Full legal name of the organisation |
 | `policy_suite` | Yes | Name of this policy collection |
-| `version` | Yes | Semantic version (MAJOR.MINOR.PATCH) |
+| `version` | Yes | Semantic version (MAJOR.MINOR.PATCH) of the policy file itself |
 | `effective_date` | Yes | ISO 8601 date when policy became active |
 | `review_date` | Yes | ISO 8601 date when policy must be reviewed |
 | `owner` | Yes | Team or role responsible for this policy |
@@ -222,6 +234,8 @@ policies:
 | `ENFORCE` | Standing directive. The agent must always apply this rule. | Injected as a mandatory standing instruction in all compiled outputs. |
 | `WARN` | Soft flag. The agent should pause and alert a human. | Triggers a warning message and escalation workflow. Does not hard-block. |
 
+**Observe mode:** When a raigo engine or runtime is operating in `observe` mode, all `DENY` actions are downgraded to `WARN` for the duration of the session. The response includes `observeOverride: true` to indicate the downgrade. This allows operators to audit what would have been blocked before committing to enforcement. See [docs/observe-mode.md](./docs/observe-mode.md).
+
 ---
 
 ### Severity Levels
@@ -288,16 +302,22 @@ compliance_mapping:
 | Identifier | Framework |
 |---|---|
 | `ISO_27001` | ISO/IEC 27001:2022 |
+| `ISO_42001` | ISO/IEC 42001:2023 — AI Management Systems |
+| `NIST_AI_RMF` | NIST AI Risk Management Framework 1.0 |
 | `NIST_800_53` | NIST SP 800-53 |
 | `NIST_800_171` | NIST SP 800-171 |
 | `CMMC` | Cybersecurity Maturity Model Certification |
 | `HIPAA` | Health Insurance Portability and Accountability Act |
+| `EU_AI_ACT` | EU Artificial Intelligence Act (2024/1689) |
+| `DORA` | EU Digital Operational Resilience Act |
 | `DSPT` | NHS Data Security and Protection Toolkit |
 | `UK_GDPR` | UK General Data Protection Regulation |
 | `EU_GDPR` | EU General Data Protection Regulation |
 | `SOC2` | SOC 2 Type II |
 | `OWASP` | OWASP Top 10 |
 | `CIS` | CIS Controls |
+
+For a full mapping of each framework's requirements to `.raigo` rule patterns, see [docs/compliance-mappings.md](./docs/compliance-mappings.md).
 
 ---
 
@@ -320,43 +340,73 @@ compliance_mapping:
 
 ## Compiled Output Targets
 
+When operating in compiler mode, a raigo-compatible compiler reads a `.raigo` file and generates a native enforcement artifact for each target platform. The artifact format is determined by the target, not by the `.raigo` file itself — the same policy compiles to all targets without modification.
+
 | Target | Output File | Format | Used For |
 |---|---|---|---|
 | `n8n` | `n8n_policy.json` | JSON | Global Variable + AI Agent system prompt |
-| `microsoft` | `microsoft_policy.json` | JSON | Declarative Agent Manifest + Azure RAI Policy |
+| `copilot` | `microsoft_policy.json` | JSON | Declarative Agent Manifest + Azure RAI Policy |
 | `claude` | `claude_system_prompt.xml` | XML | Claude API `system` parameter |
 | `chatgpt` | `chatgpt_instructions.md` | Markdown | ChatGPT Custom Instructions / Assistants API |
 | `openclaw` | `openclaw_policy.json` | JSON | OpenClaw gateway config + SOUL.md |
 | `lovable` | `lovable_knowledge.md` | Markdown | Lovable Workspace Knowledge |
 | `gemini` | `gemini_system_instruction.json` | JSON | Vertex AI `system_instruction` field |
 | `perplexity` | `perplexity_instructions.md` | Markdown | Perplexity Spaces custom instructions |
-| `summary` | `compliance_summary.md` | Markdown | Human-readable audit report |
+| `audit` | `compliance_summary.md` | Markdown | Human-readable audit report |
 
 ---
 
-## Usage
+## Extending the Standard
+
+The `.raigo` format is designed to be extended. Third-party implementations may add custom fields using a namespaced prefix to avoid collisions with future standard fields.
+
+```yaml
+# Custom extension fields use x_ prefix
+policies:
+  - id: "DP-01"
+    action: "DENY"
+    directive: "..."
+    x_myplatform_priority: 10
+    x_myplatform_category: "data-loss-prevention"
+```
+
+Extension fields must not conflict with any field defined in this specification. If you are building a platform-specific extension that you believe should be standardised, please open an issue in the [raigo repository](https://github.com/PericuloLimited/raigo/issues).
+
+---
+
+## Versioning
+
+The specification follows [Semantic Versioning](https://semver.org/). The `raigo_version` field in a `.raigo` file must reference the specification version the file was written against.
+
+| Version | Date | Changes |
+|---|---|---|
+| 0.3.0 | 2026-03-26 | Added observe mode spec, ISO 42001 / EU AI Act / DORA / NIST AI RMF compliance identifiers, extension field convention, stability guarantee, versioning guidance |
+| 0.2.0 | 2026-03-25 | Added testing framework, conflict resolution algorithm, webhook schema, compliance mappings reference |
+| 0.1.0 | 2026-03-24 | Initial release: metadata, context, policies, conditions, actions, severity, compliance mapping, rule ID conventions, 9 compiler targets |
+
+---
+
+## Usage (Reference Implementation)
+
+The raigo CLI is the reference implementation of this specification. It is not required — any tool that correctly implements this specification is a valid raigo-compatible implementation.
 
 ```bash
-# Compile to all targets
-python3 compile.py my-policy.raigo
+# Install the reference CLI
+npm install -g @periculo/raigo
 
 # Compile to a specific target
-python3 compile.py my-policy.raigo --target claude
+raigo compile policy.raigo --target claude
 
-# Specify output directory
-python3 compile.py my-policy.raigo --output-dir ./compiled
+# Compile to all targets
+raigo compile policy.raigo --all
+
+# Validate a policy file against the spec
+raigo validate policy.raigo
+
+# Initialise a new policy from a template
+raigo init
 ```
 
 ---
 
-## Changelog
-
-| Version | Date | Changes |
-|---|---|---|
-| 2.0 | 2026-03-24 | Full schema redesign: structured conditions, compliance mapping, severity levels, human review flags, platform overrides, network/server topology model, 9 compiler targets |
-| 1.1 | 2026-03-24 | Atomic single-directive rules (one directive per rule ID) |
-| 1.0 | 2026-03-24 | Initial release |
-
----
-
-*RAIGO is maintained by [Periculo](https://periculo.co.uk) — AI security specialists for defence and healthcare.*
+*raigo is maintained by [Periculo](https://periculo.co.uk) — AI security specialists for defence and healthcare.*

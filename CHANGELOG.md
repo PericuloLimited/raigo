@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-26
+
+### Changed
+- `README.md` — complete rewrite to lead with the `.raigo` format as the open standard; added "The Standard" section, deployment models table, ecosystem table, and clear explanation of the spec/compiler/engine/cloud relationship
+- `SPECIFICATION.md` — added "This Document" preamble clearly stating the spec is the primary open-source contribution; added stability guarantee, versioning guidance, extension field convention (`x_` prefix), and updated compliance identifiers (ISO 42001, EU AI Act, DORA, NIST AI RMF)
+- All uppercase `RAIGO` references replaced with lowercase `raigo` throughout spec and README
+- `raigo_version` field in examples updated to `0.3.0`
+
+---
+
 ## [0.3.0] - 2026-03-26
 
 ### Added
