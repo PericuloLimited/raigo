@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] - 2026-03-26
+
+### Added
+- `docs/observe-mode.md` — full specification of Observe mode (warn-first onboarding): API behaviour, `observeOverride` flag, config file and env var options, recommended 7–14 day onboarding workflow, and test framework support for asserting behaviour in both modes
+- `engineMode` runtime config field (`observe` | `enforce`) — set via `raigo.config.yaml` or `RAIGO_ENGINE_MODE` env var
+- `observeOverride: true` field in evaluate response when a DENY rule is downgraded in Observe mode
+- Test case `engineMode` field — assert expected action in both Observe and Enforce mode from the same test suite
+
+### Changed
+- Default engine mode on first deploy is now `observe` — nothing is blocked until you explicitly switch to `enforce`
+- `docs/quickstart.md` updated to mention Observe mode as the default starting state
+
+---
+
 ## [0.2.0] - 2026-03-26
 
 ### Added

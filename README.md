@@ -5,7 +5,7 @@
 **The open standard and policy engine for AI agent governance.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.2.0-orange.svg)](https://github.com/PericuloLimited/raigo/releases)
+[![Version](https://img.shields.io/badge/version-0.3.0-orange.svg)](https://github.com/PericuloLimited/raigo/releases)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![npm](https://img.shields.io/npm/v/@periculo/raigo.svg)](https://www.npmjs.com/package/@periculo/raigo)
 
@@ -226,9 +226,23 @@ Does your organization use RAIGO in production? Please submit a pull request to 
 
 ---
 
+## Documentation
+
+| Document | Description |
+|---|---|
+| [Quickstart](./docs/quickstart.md) | Run the engine locally, self-host, or use raigo cloud |
+| [Observe Mode](./docs/observe-mode.md) | Warn-first onboarding: see what would be blocked before enforcing |
+| [Testing Framework](./docs/testing-framework.md) | `raigo test` CLI, YAML test cases, CI/CD integration |
+| [Compliance Mappings](./docs/compliance-mappings.md) | EU AI Act, DORA, HIPAA, ISO 42001, NIST AI RMF, GDPR, SOC 2 |
+| [Webhook Schema](./docs/webhook-schema.md) | Stable JSON schemas for evaluate request/response and webhook events |
+| [Conflict Resolution](./docs/conflict-resolution.md) | Most-restrictive-wins algorithm, priority override, worked examples |
+| [Specification](./SPECIFICATION.md) | Full `.raigo` format specification |
+
+---
+
 ## Contributing
 
-RAIGO is an open standard and we welcome contributions of all kinds. Please read the [Contributing Guide](./CONTRIBUTING.md), review our [Governance Model](./GOVERNANCE.md), and check the [Roadmap](./ROADMAP.md).
+raigo is an open standard and we welcome contributions of all kinds. Please read the [Contributing Guide](./CONTRIBUTING.md), review our [Governance Model](./GOVERNANCE.md), and check the [Roadmap](./ROADMAP.md).
 
 ---
 
