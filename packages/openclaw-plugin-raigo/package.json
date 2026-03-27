@@ -1,0 +1,31 @@
+{
+  "name": "@periculo/openclaw-plugin-raigo",
+  "version": "1.0.0",
+  "description": "OpenClaw plugin — raigo AI governance enforcement via before_tool_call hook",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist/", "README.md"],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest"
+  },
+  "keywords": ["openclaw", "raigo", "ai-governance", "policy", "agent-firewall"],
+  "author": "Periculo Limited",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PericuloLimited/raigo.git",
+    "directory": "packages/openclaw-plugin-raigo"
+  },
+  "homepage": "https://raigo.ai/docs/openclaw",
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.0.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "ts-jest": "^29.0.0"
+  },
+  "peerDependencies": {}
+}
