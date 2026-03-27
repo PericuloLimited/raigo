@@ -23,6 +23,26 @@ export interface RaigoPluginConfig {
   verbose?: boolean;
   /** If true, allow tool calls when the engine is unreachable. Default: true */
   failOpen?: boolean;
+  /**
+   * Optional callback fired on every WARN or DENY decision.
+   * Use this to push alerts to your own systems (Slack, PagerDuty, etc.)
+   * in addition to the automatic logging in raigo cloud.
+   */
+  onViolation?: (event: ViolationEvent) => void | Promise<void>;
+}
+
+export interface ViolationEvent {
+  action: "WARN" | "DENY";
+  toolName: string;
+  ruleId?: string;
+  ruleName?: string;
+  severity?: string;
+  complianceRefs?: string[];
+  message?: string;
+  agentId?: string;
+  channel?: string;
+  processingMs?: number;
+  timestamp: string;
 }
 
 export interface EvaluateRequest {
@@ -148,6 +168,27 @@ export class RaigoEnforcer {
         `[raigo] ${result.action} tool=${ctx.toolName}` +
         (result.ruleId ? ` rule=${result.ruleId}` : "") +
         (result.processingMs ? ` (${result.processingMs}ms)` : "")
+      );
+    }
+
+    // Fire onViolation callback for WARN/DENY
+    if (result.action !== "ALLOW" && this.config.onViolation) {
+      const event: ViolationEvent = {
+        action: result.action as "WARN" | "DENY",
+        toolName: ctx.toolName,
+        ruleId: result.ruleId,
+        ruleName: result.ruleName,
+        severity: result.severity,
+        complianceRefs: result.complianceRefs,
+        message: result.message,
+        agentId: ctx.agentId,
+        channel: ctx.channel,
+        processingMs: result.processingMs,
+        timestamp: new Date().toISOString(),
+      };
+      // Fire and forget — don't block the hook on callback errors
+      Promise.resolve(this.config.onViolation(event)).catch((err) =>
+        console.warn("[raigo] onViolation callback error:", err)
       );
     }
 
