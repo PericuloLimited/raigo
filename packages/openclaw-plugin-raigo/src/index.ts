@@ -82,8 +82,10 @@ export interface HookResult {
 
 // ── Core evaluator ────────────────────────────────────────────────────────────
 
+type ResolvedConfig = Omit<Required<RaigoPluginConfig>, 'onViolation'> & { onViolation?: (event: ViolationEvent) => void | Promise<void> };
+
 export class RaigoEnforcer {
-  private config: Required<RaigoPluginConfig>;
+  private config: ResolvedConfig;
 
   constructor(config: RaigoPluginConfig) {
     this.config = {
