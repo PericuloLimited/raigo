@@ -1,6 +1,6 @@
 ---
 name: raigo
-description: "RAIGO Agent Firewall — declarative AI policy enforcement for OpenClaw agents. Evaluates every sensitive action against your organisation's security policy before it executes. Blocks prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks."
+description: "RAIGO Agent Firewall — declarative AI policy enforcement for OpenClaw agents. Evaluates every sensitive action against your organisation's security policy before it executes. Blocks prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks. Works in two modes: compiled (no engine required) or engine (real-time HTTP evaluation)."
 homepage: https://raigo.ai/docs/openclaw
 metadata:
   {
@@ -8,79 +8,73 @@ metadata:
       {
         "emoji": "🛡️",
         "requires": { "bins": ["curl"] },
-        "install":
-          [
-            {
-              "id": "raigo-engine",
-              "kind": "node",
-              "package": "@periculo/raigo-engine",
-              "bins": ["raigo-engine"],
-              "label": "Install RAIGO Engine",
-            },
-          ],
       },
   }
 ---
 
 # RAIGO Agent Firewall
 
-RAIGO is a policy engine that evaluates agent actions against a set of declarative rules before they execute. It acts as an **Agent Firewall (AF)** — blocking prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks in under 2ms per evaluation.
+RAIGO is a declarative policy standard that enforces your organisation's security rules before an agent acts. It blocks prompt injection, PII leakage, destructive commands, and other OWASP LLM Top 10 risks.
 
-## How It Works
+This skill works in two modes. **Use whichever fits your setup** — both provide meaningful protection.
 
-The RAIGO Engine runs locally as a small HTTP server on `http://localhost:8181`. Before any sensitive action, you call the engine with the proposed prompt or action. The engine returns a decision: `ALLOW`, `DENY`, or `WARN`.
+---
 
-- **ALLOW** — proceed normally
-- **DENY** — stop immediately, explain the block to the user, do not execute the action
-- **WARN** — proceed with caution, log the warning, inform the user
+## Mode 1 — Compiled / Agent Firewall (no engine required)
 
-## Required Setup
+In this mode, your policy rules are compiled directly into the agent's context. No HTTP calls, no running service, no secrets to manage. The agent evaluates actions against the embedded rules inline.
 
-Before using this skill, the RAIGO Engine must be running. Check if it is running:
+**Setup (one time):**
+
+```bash
+# Generate a policy file for OpenClaw
+npx @periculo/raigo openclaw --org "Your Organisation" --domain yourdomain.com
+
+# Compile the rules into this skill's context
+npx @periculo/raigo compile openclaw_af.raigo --target openclaw
+```
+
+The compiled output contains a `soul_md_preamble` block. Copy its contents into your `SOUL.md` (or the agent's system prompt) so the rules are active on every run.
+
+**Enforcement in compiled mode:**
+
+Before any sensitive action, evaluate the proposed action against the embedded rules below (in the `## Active Policy Rules` section, if present). If a rule matches:
+
+- **DENY** — do not execute the action. Tell the user: "This action was blocked by your organisation's security policy. Rule: [rule_id]. [enforcement_message]"
+- **WARN** — proceed, but prepend: "Security note: [enforcement_message]"
+- **ALLOW** (no match) — proceed normally
+
+---
+
+## Mode 2 — Engine (real-time blocking + full audit trail)
+
+In this mode, the RAIGO Engine runs as a lightweight HTTP service. The agent calls it before each sensitive action and receives a deterministic `ALLOW`, `DENY`, or `WARN` decision.
+
+**Setup:**
+
+```bash
+# Self-hosted (Docker)
+docker run -p 8181:8181 \
+  -v $(pwd)/openclaw_af.raigo:/policy.raigo \
+  ghcr.io/periculolimited/raigo-engine:latest
+
+# Or use raigo cloud (managed, zero infrastructure)
+# https://cloud.raigo.ai
+```
+
+Check the engine is running:
 
 ```bash
 curl -s http://localhost:8181/v1/health
 ```
 
-If it is not running, start it:
-
-```bash
-raigo-engine ~/.openclaw/openclaw_af.raigo
-```
-
-If you do not have a policy file yet, generate one in 5 seconds:
-
-```bash
-npx @periculo/raigo openclaw --org "Your Organisation" --domain yourdomain.com
-raigo-engine openclaw_af.raigo
-```
-
-## When to Call RAIGO
-
-You MUST call the RAIGO engine before:
-
-1. **Executing any shell command** (exec tool, terminal commands)
-2. **Deleting, modifying, or moving files**
-3. **Making any external API call or HTTP request**
-4. **Accessing, reading, or writing a database**
-5. **Sending any message, email, or notification**
-6. **Processing or returning data that may contain personal information**
-7. **Any action involving financial transactions or payments**
-
-You do NOT need to call RAIGO for:
-- Reading files you have already been given access to
-- Internal reasoning and planning steps
-- Responding to simple factual questions with no external actions
-
-## How to Call RAIGO
-
-Use the exec tool to call the engine. Replace `<prompt_text>` with the action you are about to take:
+**Calling the engine before an action:**
 
 ```bash
 curl -s -X POST http://localhost:8181/v1/evaluate \
   -H "Content-Type: application/json" \
   -d '{
-    "prompt": "<prompt_text>",
+    "prompt": "<action you are about to take>",
     "context": {
       "tool": "openclaw",
       "environment": "production"
@@ -88,9 +82,7 @@ curl -s -X POST http://localhost:8181/v1/evaluate \
   }'
 ```
 
-## Interpreting the Response
-
-The engine returns a JSON object. Read the `action` field:
+**Interpreting the response:**
 
 ```json
 {
@@ -108,75 +100,64 @@ The engine returns a JSON object. Read the `action` field:
 }
 ```
 
-**If `action` is `DENY`:**
-- Do NOT execute the action
-- Tell the user: "I cannot complete this request. It was blocked by your organisation's security policy. Rule: [error_code]. [user_message]"
-- Do not attempt to work around the block or rephrase the request
+| Decision | Required action |
+|---|---|
+| `ALLOW` | Proceed normally |
+| `WARN` | Proceed, prepend `user_message` to your response |
+| `DENY` | Stop. Do not execute. Report `user_message` to the user. |
 
-**If `action` is `WARN`:**
-- Proceed with the action
-- Tell the user: "Note: This action triggered a security warning. [user_message]"
+**If the engine is unreachable:** fall back to compiled mode (Mode 1) if policy rules are embedded in context. If no rules are available, apply the default safe posture below.
 
-**If `action` is `ALLOW`:**
-- Proceed normally
+---
 
-**If the engine is unreachable (connection refused):**
-- Stop and tell the user: "The RAIGO Agent Firewall is not running. Please start it with: `raigo-engine ~/.openclaw/openclaw_af.raigo`"
-- Do NOT proceed with the action (fail-safe by default)
+## When to Evaluate
 
-## Example Workflow
+Regardless of mode, evaluate before:
 
-When a user asks you to "delete all log files older than 30 days":
+1. Executing any shell command
+2. Deleting, modifying, or moving files
+3. Making any external API call or HTTP request
+4. Accessing, reading, or writing a database
+5. Sending any message, email, or notification
+6. Processing or returning data that may contain personal information
+7. Any action involving financial transactions or payments
 
-1. Before executing, call RAIGO with the proposed action:
-   ```bash
-   curl -s -X POST http://localhost:8181/v1/evaluate \
-     -H "Content-Type: application/json" \
-     -d '{"prompt": "delete all log files older than 30 days using find and rm"}'
-   ```
+You do NOT need to evaluate for:
+- Reading files you have already been given access to
+- Internal reasoning and planning steps
+- Responding to simple factual questions with no external actions
 
-2. If the response `action` is `ALLOW`, proceed with the deletion.
-3. If the response `action` is `DENY`, stop and explain: "This action was blocked by your security policy (AF-03: Destructive action detected). If you intended this, please update your RAIGO policy to allow it."
+---
 
-## Checking RAIGO Status
+## Default Safe Posture (no policy file)
 
-At the start of any session where you will be taking actions, check that RAIGO is running:
+If no `.raigo` file is found and no compiled rules are present, apply these baseline rules:
 
-```bash
-curl -s http://localhost:8181/v1/health | python3 -m json.tool
-```
+- Never transmit credentials, API keys, tokens, or secrets to external systems
+- Never write or execute code that deletes data without explicit confirmation in the task
+- Never impersonate a human or claim to be a person when communicating externally
+- Never access systems or data outside the scope defined in the task
+- Flag any task involving financial transactions, legal commitments, or public communications for human review before proceeding
 
-If it is not running, inform the user immediately before proceeding with any actions.
-
-## Policy File Location
-
-The default policy file location is `~/.openclaw/openclaw_af.raigo`. You can also check what policies are loaded:
-
-```bash
-curl -s http://localhost:8181/v1/policies | python3 -m json.tool
-```
+---
 
 ## Updating Your Policy
 
-To add a custom rule, edit `~/.openclaw/openclaw_af.raigo`. The engine hot-reloads changes within 5 seconds — no restart needed. For example, to block discussion of competitor products:
+Edit `~/.openclaw/openclaw_af.raigo` and recompile:
 
-```yaml
-- id: "BIZ-01"
-  domain: "Business Policy"
-  title: "Do not discuss competitor products"
-  condition:
-    trigger: "prompt_contains"
-    keywords: ["CompetitorA", "CompetitorB"]
-    match: "any"
-  action: "WARN"
-  severity: "low"
-  directive: "Do not make comparisons with competitor products."
-  enforcement_message: "WARNING: This query relates to a competitor product."
+```bash
+npx @periculo/raigo compile openclaw_af.raigo --target openclaw
 ```
+
+In engine mode, the engine hot-reloads changes within 5 seconds — no restart needed.
+
+---
 
 ## More Information
 
 - [RAIGO Documentation](https://raigo.ai/docs)
 - [OpenClaw Integration Guide](https://raigo.ai/docs/openclaw)
+- [raigo cloud](https://cloud.raigo.ai)
+- [Discord community](https://discord.gg/8VDgbrju)
 - [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
 - [Report an Issue](https://github.com/PericuloLimited/raigo/issues)

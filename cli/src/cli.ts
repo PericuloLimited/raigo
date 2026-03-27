@@ -225,9 +225,14 @@ program
     console.log(chalk.dim('            LLM08 Excessive Agency, LLM09 Overreliance, LLM03/07 Plugin Safety'));
     console.log('');
     console.log(chalk.bold('  Next steps:\n'));
-    console.log(`  ${chalk.dim('1.')} Start the engine:  ${chalk.bold(`raigo-engine ${options.output}`)}`);
-    console.log(`  ${chalk.dim('2.')} Add the skill:     Copy ${chalk.bold('skill/raigo/')} to ${chalk.bold('~/.openclaw/skills/raigo/')}`);
-    console.log(`  ${chalk.dim('3.')} That\'s it.         Your OpenClaw agent is now protected.`);
+    console.log(chalk.dim('  ── Agent Firewall mode (no engine required) ─────────────────────'));
+    console.log(`  ${chalk.dim('1.')} Compile:    ${chalk.bold(`raigo compile ${options.output} --target openclaw`)}`);
+    console.log(`  ${chalk.dim('2.')} Add skill:  Copy ${chalk.bold('integrations/openclaw/skill/raigo/')} to ${chalk.bold('~/.openclaw/skills/raigo/')}`);
+    console.log(`  ${chalk.dim('3.')} Done.       Policy rules are embedded in your agent context — no engine needed.`);
+    console.log('');
+    console.log(chalk.dim('  ── Engine mode (real-time blocking + full audit trail) ──────────'));
+    console.log(chalk.dim('  Self-host:  docker run -p 8181:8181 ghcr.io/periculolimited/raigo-engine:latest'));
+    console.log(chalk.dim('  Cloud:      https://cloud.raigo.ai  (managed, zero infrastructure)'));
     console.log('');
     console.log(chalk.dim(`  Skill & hook:   https://github.com/PericuloLimited/raigo/tree/main/integrations/openclaw`));
     console.log(chalk.dim('  Docs:           https://raigo.ai/docs/openclaw'));

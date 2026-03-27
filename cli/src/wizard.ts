@@ -988,11 +988,12 @@ export async function runSetupWizard(): Promise<void> {
   console.log(`  ${chalk.dim('1.')} Edit ${chalk.bold(outputAnswer.output)} to customise the policies for your organisation`);
   console.log(`  ${chalk.dim('2.')} Validate: ${chalk.bold(`raigo validate ${outputAnswer.output}`)}`);
   console.log(`  ${chalk.dim('3.')} Compile:  ${chalk.bold(`raigo compile ${outputAnswer.output} --all`)}`);
-  console.log(`  ${chalk.dim('4.')} Engine:   ${chalk.bold(`raigo-engine ${outputAnswer.output}`)}`);
   if (templateKey === 'openclaw_af') {
-    console.log(`  ${chalk.dim('5.')} OpenClaw: Copy ${chalk.bold('skill/raigo/')} to ${chalk.bold('~/.openclaw/skills/raigo/')}`);
-    console.log(`  ${chalk.dim('6.')} Docs:     ${chalk.bold('https://raigo.ai/docs/openclaw')}`);
+    console.log(`  ${chalk.dim('4.')} OpenClaw: Copy ${chalk.bold('integrations/openclaw/skill/raigo/')} to ${chalk.bold('~/.openclaw/skills/raigo/')}`);
+    console.log(`  ${chalk.dim('5.')} Docs:     ${chalk.bold('https://raigo.ai/docs/openclaw')}`);
   } else {
+    console.log(`  ${chalk.dim('4.')} Engine:   ${chalk.bold('docker run -p 8181:8181 ghcr.io/periculolimited/raigo-engine:latest')}`);
+    console.log(`  ${chalk.dim('      or')}   ${chalk.bold('https://cloud.raigo.ai')} ${chalk.dim('(managed, zero infrastructure)')}`);
     console.log(`  ${chalk.dim('5.')} Docs:     ${chalk.bold('https://raigo.ai/docs')}`);
   }
   console.log('');
