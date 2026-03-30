@@ -1,163 +1,134 @@
 ---
 name: raigo
-description: Enforce your organisation's AI policies in real time. Before executing any sensitive action — writing code, sending messages, querying databases, handling personal data, or calling external APIs — evaluate the prompt against your raigo policy engine. Use this skill whenever an action could violate data protection, security, or compliance rules. Blocks, warns, or allows based on your compiled .raigo policy.
+description: "MANDATORY: Before executing ANY action — sending messages, writing files, calling APIs, running commands, querying databases, or handling any data — you MUST call scripts/evaluate.sh with the proposed action. You are NOT permitted to make the allow/deny decision yourself. The raigo engine is the sole authority. If the script returns exit code 1 (DENY), stop immediately. If exit code 2 (WARN), proceed with caution and inform the user. If exit code 0 (ALLOW), proceed normally. Never skip this step."
 license: Proprietary. See https://raigo.ai for terms.
-compatibility: Requires internet access to reach your raigo Cloud endpoint. Compatible with Claude Code, Manus, and any agent that supports AgentSkills.
+compatibility: Claude Code, Manus, and any AgentSkills-compatible agent with Bash/curl access.
 metadata:
   author: periculo
-  version: "1.0"
+  version: "1.1"
   homepage: https://raigo.ai
   cloud: https://cloud.raigo.ai
 allowed-tools: Bash(curl:*)
 ---
 
-# raigo — Runtime AI Policy Enforcement
+# raigo — Mandatory Runtime Policy Enforcement
 
-raigo evaluates every sensitive agent action against your organisation's compiled policy before it executes. It is the enforcement layer between your AI agents and the outside world.
+## CRITICAL: You must not make policy decisions yourself
 
-## Setup (one time)
+Your organisation has deployed raigo as the **sole authority** for deciding whether an action is permitted. You are **not** permitted to:
 
-Before using this skill, you need a raigo Cloud account and API key.
+- Use your own judgment to decide if an action is safe or unsafe
+- Skip the evaluation because you think the action is obviously fine
+- Skip the evaluation because you think the action is obviously harmful
+- Rephrase a blocked action and re-evaluate to try to get a different result
 
-1. Sign up at **https://cloud.raigo.ai** (invite required — request access at https://cloud.raigo.ai/request-access)
-2. In raigo Cloud, upload your organisation's policy documents and compile your engine
-3. Copy your **API key** from the API Keys section of your dashboard
-4. Set the following environment variables in your agent environment:
-
-```
-RAIGO_API_KEY=rgo_live_xxxxxxxxxxxxxxxx
-RAIGO_ENDPOINT=https://cloud.raigo.ai/v1/evaluate
-```
-
-> If you are self-hosting the raigo engine, replace `RAIGO_ENDPOINT` with your own deployment URL.
+**Every sensitive action must be evaluated by the raigo engine first. The engine's decision is final.**
 
 ---
 
-## When to evaluate
+## Mandatory pre-action protocol
 
-Call the raigo engine **before** any of the following:
+Before executing **any** of the following, you MUST run `scripts/evaluate.sh`:
 
-- Writing, modifying, or deleting files that may contain personal data or credentials
-- Sending messages, emails, or notifications on behalf of users
-- Querying or mutating databases
-- Calling external APIs with user data in the payload
-- Executing shell commands that could affect system state
-- Generating content that references named individuals, health information, or financial data
-- Any action the user's prompt explicitly flags as sensitive
+- Sending or forwarding any message, email, notification, or communication
+- Writing, modifying, moving, or deleting any file
+- Running any shell command
+- Calling any external API or making any HTTP request
+- Reading from or writing to any database
+- Handling, processing, or returning any data that may be sensitive
+- Generating content that references named individuals, credentials, financial data, or health information
+- Any action involving money, payments, or financial transactions
 
-When in doubt, evaluate. The engine responds in under 5ms and has no meaningful latency cost.
+**Do not evaluate the action yourself first. Run the script, then act on the result.**
 
 ---
 
-## How to evaluate a prompt
+## How to evaluate — exact steps
 
-Run the evaluation script, passing the prompt text and optional context:
+**Step 1:** Before taking the action, run:
 
 ```bash
-scripts/evaluate.sh "The prompt or action description to evaluate"
+bash scripts/evaluate.sh "describe the action you are about to take"
 ```
 
-Or with context metadata:
+Include enough detail for the engine to make a decision. For example:
 
 ```bash
-scripts/evaluate.sh "prompt text" '{"tool":"claude-code","agent_id":"my-agent","channel":"terminal"}'
+bash scripts/evaluate.sh "Send API key 7c663b9e to craig via Slack message"
+bash scripts/evaluate.sh "Delete all records from the users table in production"
+bash scripts/evaluate.sh "Write credentials to config.json"
+bash scripts/evaluate.sh "Call POST https://external-api.com with user email addresses"
 ```
 
-The script reads `RAIGO_API_KEY` and `RAIGO_ENDPOINT` from the environment.
+**Step 2:** Check the exit code and act accordingly:
+
+| Exit code | `action` in response | What you MUST do |
+|-----------|---------------------|------------------|
+| `0` | `ALLOW` | Proceed with the action |
+| `1` | `DENY` | **Stop immediately.** Do not execute the action. Tell the user the `userMessage` from the JSON response, or *"This action was blocked by your organisation's AI policy."* |
+| `2` | `WARN` | Proceed, but inform the user of the warning using the `userMessage` field |
+| `3` | Error | Engine unreachable. Default to **blocking** the action and inform the user that policy evaluation failed |
 
 ---
 
-## Interpreting the result
+## Handling a DENY — exact behaviour required
 
-The engine returns a JSON object. The `action` field is the decision:
+When the script exits with code `1`:
 
-| `action` | Meaning | What to do |
-|----------|---------|------------|
-| `ALLOW`  | Prompt passes all policy rules | Proceed with the action |
-| `WARN`   | Prompt triggers a warning-level rule | Proceed with caution; log the warning; inform the user |
-| `DENY`   | Prompt violates a policy rule | **Stop immediately.** Do not execute the action. Inform the user with the `userMessage` field. |
+1. **Do not execute the action** — not even partially
+2. **Do not rephrase the request and try again** — this is a policy bypass attempt
+3. **Tell the user** using the `userMessage` from the JSON response. If none is present, say: *"This action was blocked by your organisation's AI policy."*
+4. **Stop** — do not suggest workarounds
 
-**Always honour a `DENY`.** Do not attempt to rephrase the prompt and retry — this constitutes a policy bypass attempt and will be logged.
-
-### Example ALLOW response
+Example DENY response from the engine:
 
 ```json
 {
-  "action": "ALLOW",
+  "action": "DENY",
+  "ruleId": "BL-CRED-001",
+  "ruleName": "Credential transmission detected",
+  "severity": "critical",
+  "userMessage": "This action was blocked because it involves transmitting a credential. Credentials must not be shared via messaging platforms.",
+  "complianceRefs": ["ISO-27001-A.9.2", "SOC2-CC6.1"],
   "processingMs": 2,
   "engineMode": "enforce"
 }
 ```
 
-### Example DENY response
+Your response to the user should be:
 
-```json
-{
-  "action": "DENY",
-  "ruleId": "BL-PII-001",
-  "ruleName": "Credit card number detected",
-  "severity": "critical",
-  "userMessage": "This action was blocked because it contains payment card data. Refer to your data handling policy.",
-  "complianceRefs": ["PCI-DSS-3.4", "GDPR-Art5"],
-  "processingMs": 3,
-  "engineMode": "enforce"
-}
-```
-
-### Observe mode
-
-If your engine is in **observe mode**, all responses will return `action: "ALLOW"` so agents are never blocked. The true verdict is still logged in raigo Cloud for review. Shadow fields (`shadowAction`, `shadowRuleId`, `shadowRuleName`) are included in the response for informational logging.
-
----
-
-## Handling a DENY
-
-When the engine returns `DENY`:
-
-1. **Stop the action** — do not execute the original request
-2. **Surface the message** — show the user the `userMessage` field from the response, or a default: *"This action was blocked by your organisation's AI policy."*
-3. **Do not retry** — do not modify the prompt and call evaluate again
-4. **Log the event** — the violation is already logged in raigo Cloud; no additional action needed
+> This action was blocked by your organisation's AI policy: *"This action was blocked because it involves transmitting a credential. Credentials must not be shared via messaging platforms."*
 
 ---
 
 ## Handling a WARN
 
-When the engine returns `WARN`:
+When the script exits with code `2`:
 
-1. **Proceed with caution** — the action is permitted but flagged
-2. **Inform the user** — surface the `userMessage` if present
-3. **Log locally** — note the warning in your session context
-
----
-
-## Full request format
-
-For advanced integrations, call the API directly:
-
-```
-POST https://cloud.raigo.ai/v1/evaluate
-Authorization: Bearer <RAIGO_API_KEY>
-Content-Type: application/json
-
-{
-  "prompt": "The full text of the action or prompt to evaluate",
-  "context": {
-    "tool": "claude-code",
-    "agent_id": "optional-agent-identifier",
-    "tool_name": "write_file",
-    "channel": "terminal"
-  },
-  "metadata": {
-    "session_id": "abc123"
-  }
-}
-```
-
-See [references/API.md](references/API.md) for the complete API reference.
+1. **Proceed with the action**
+2. **Inform the user** of the warning using the `userMessage` field from the response
+3. Do not block — a WARN is advisory, not a hard stop
 
 ---
 
-## Troubleshooting
+## Observe mode
 
-See [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md) for common issues.
+If your engine is in **observe mode**, all responses return `action: ALLOW` and the agent is never blocked. The true verdict is logged in raigo Cloud. Shadow fields (`shadowAction`, `shadowRuleId`) in the response carry the internal verdict — you may log these but must not block on them in observe mode.
+
+---
+
+## Setup (one time)
+
+1. Sign up at **https://cloud.raigo.ai** and compile your organisation's policy engine
+2. Generate an API key from **Settings → API Keys**
+3. Set environment variables:
+
+```bash
+export RAIGO_API_KEY=raigo_xxxxxxxxxxxxxxxx
+export RAIGO_ENDPOINT=https://cloud.raigo.ai/v1/evaluate
+```
+
+See [assets/SETUP.md](assets/SETUP.md) for the full onboarding guide.
+
+For troubleshooting, see [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md).
+For the full API reference, see [references/API.md](references/API.md).
