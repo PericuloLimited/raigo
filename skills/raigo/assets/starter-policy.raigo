@@ -1,0 +1,93 @@
+# raigo starter policy — customise this for your organisation
+# Upload to raigo Cloud at https://cloud.raigo.ai to compile your engine
+#
+# Format: raigo v2 schema
+# Docs: https://github.com/periculolimited/raigo
+
+version: "2"
+org: "Your Organisation Name"
+description: "AI usage policy — generated from starter template"
+
+rules:
+  # ── Data protection ──────────────────────────────────────────────────────
+
+  - id: DP-001
+    name: "Block personal data exfiltration"
+    description: "Prevent AI tools from sending personal data to external destinations"
+    severity: high
+    action: DENY
+    triggers:
+      prompt_contains:
+        - "send to external"
+        - "upload to"
+        - "post to webhook"
+        - "exfiltrate"
+    compliance:
+      - GDPR-Art5
+      - ISO-27001-A.8.2
+
+  - id: DP-002
+    name: "Warn on bulk data operations"
+    description: "Flag requests to process large volumes of personal data"
+    severity: medium
+    action: WARN
+    triggers:
+      prompt_contains:
+        - "all users"
+        - "entire database"
+        - "bulk export"
+        - "dump all records"
+    compliance:
+      - GDPR-Art5
+      - SOC2-CC6.1
+
+  # ── Credential handling ───────────────────────────────────────────────────
+
+  - id: SEC-001
+    name: "Block credential storage requests"
+    description: "Prevent AI from storing or logging credentials"
+    severity: critical
+    action: DENY
+    triggers:
+      prompt_contains:
+        - "save my password"
+        - "store the api key"
+        - "write credentials to"
+        - "log the token"
+    compliance:
+      - ISO-27001-A.9.2
+      - SOC2-CC6.1
+
+  # ── Content policy ────────────────────────────────────────────────────────
+
+  - id: CONT-001
+    name: "Block generation of misleading content"
+    description: "Prevent AI from generating content that could mislead customers or regulators"
+    severity: high
+    action: DENY
+    triggers:
+      prompt_contains:
+        - "write a fake review"
+        - "generate false"
+        - "fabricate evidence"
+        - "create a misleading"
+    compliance:
+      - FCA-SYSC-6.1
+      - ISO-27001-A.6.1.2
+
+  # ── Operational boundaries ────────────────────────────────────────────────
+
+  - id: OPS-001
+    name: "Require review for production deployments"
+    description: "Flag any AI-initiated production deployment for human review"
+    severity: medium
+    action: WARN
+    triggers:
+      prompt_contains:
+        - "deploy to production"
+        - "push to main"
+        - "release to live"
+        - "update production database"
+    compliance:
+      - SOC2-CC8.1
+      - ISO-27001-A.14.2.2
