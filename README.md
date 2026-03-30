@@ -25,6 +25,9 @@ The `.raigo` format is the open-source contribution. It is free to use, implemen
 
 Everything else in this repository — the reference compiler CLI, the self-hosted engine, and the [raigo cloud](https://cloud.raigo.ai) managed service — are implementations built on top of the standard. They are provided as reference implementations and tools to make adopting the standard easier, but they are not the standard itself.
 
+Try the raigo compiler [raigo compiler] (https://raigo.ai)
+Try raigo engine [raigo cloud](https://cloud.raigo.ai)
+
 > **The `.raigo` format is to AI governance what OpenAPI is to REST APIs, or what Rego is to policy-as-code: a vendor-neutral, open specification that any tool can implement.**
 
 ---
