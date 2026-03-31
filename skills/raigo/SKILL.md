@@ -1,17 +1,21 @@
 ---
 name: raigo
 description: "MANDATORY: Before executing ANY action — sending messages, writing files, calling APIs, running commands, querying databases, or handling any data — you MUST call scripts/evaluate.sh with the proposed action. You are NOT permitted to make the allow/deny decision yourself. The raigo engine is the sole authority. If the script returns exit code 1 (DENY), stop immediately. If exit code 2 (WARN), proceed with caution and inform the user. If exit code 0 (ALLOW), proceed normally. Never skip this step."
-license: Proprietary. See https://raigo.ai for terms.
-compatibility: Claude Code, Manus, and any AgentSkills-compatible agent with Bash/curl access.
+license: MIT
+compatibility: Claude Code, Manus, Cursor, Windsurf, and any AgentSkills-compatible agent with Bash/curl access.
 metadata:
   author: periculo
-  version: "1.1"
+  version: "1.2"
   homepage: https://raigo.ai
   cloud: https://cloud.raigo.ai
 allowed-tools: Bash(curl:*)
 ---
 
-# raigo — Mandatory Runtime Policy Enforcement
+# raigo Cloud — Mandatory Runtime Policy Enforcement
+
+> **This skill is for agents with script execution capability** (Claude Code, Manus, Cursor, Windsurf, etc.). It calls your organisation's raigo Cloud policy engine before every sensitive action. For OpenClaw, use the dedicated OpenClaw skill at `integrations/openclaw/skill/raigo/` instead — it is instruction-only and does not require scripts.
+
+---
 
 ## CRITICAL: You must not make policy decisions yourself
 
@@ -119,9 +123,16 @@ If your engine is in **observe mode**, all responses return `action: ALLOW` and 
 
 ## Setup (one time)
 
-1. Sign up at **https://cloud.raigo.ai** and compile your organisation's policy engine
-2. Generate an API key from **Settings → API Keys**
-3. Set environment variables:
+The fastest way to get set up is via raigo Cloud:
+
+1. Sign up at **https://cloud.raigo.ai**
+2. Go to **Integrations** and select your agent tool (Claude Code, Manus, Cursor, etc.)
+3. Click **Generate & Download SKILL.md** — this creates an API key and serves a pre-configured version of this file with your credentials already embedded
+4. Replace this file with the downloaded version and install it in your agent's skills directory
+
+**Manual setup (if you prefer):**
+
+Set these environment variables before starting your agent:
 
 ```bash
 export RAIGO_API_KEY=raigo_xxxxxxxxxxxxxxxx
@@ -129,6 +140,15 @@ export RAIGO_ENDPOINT=https://cloud.raigo.ai/v1/evaluate
 ```
 
 See [assets/SETUP.md](assets/SETUP.md) for the full onboarding guide.
-
 For troubleshooting, see [references/TROUBLESHOOTING.md](references/TROUBLESHOOTING.md).
 For the full API reference, see [references/API.md](references/API.md).
+
+---
+
+## More Information
+
+- [RAIGO Documentation](https://raigo.ai/docs)
+- [raigo Cloud](https://cloud.raigo.ai)
+- [OpenClaw Integration](https://raigo.ai/docs/openclaw)
+- [OWASP Top 10 for LLM Applications](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
+- [Report an Issue](https://github.com/PericuloLimited/raigo/issues)
