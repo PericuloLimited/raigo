@@ -1,0 +1,52 @@
+{
+  "name": "@raigo/mcp-server",
+  "version": "1.0.0",
+  "description": "RAIGO MCP Server — AI policy enforcement for any MCP-compatible agent (Claude Desktop, Cursor, Windsurf, and more)",
+  "license": "MIT",
+  "author": "raigo <hello@raigo.ai>",
+  "homepage": "https://raigo.ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PericuloLimited/raigo.git",
+    "directory": "integrations/mcp"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "raigo",
+    "ai-security",
+    "policy-enforcement",
+    "prompt-injection",
+    "ai-governance",
+    "claude",
+    "cursor",
+    "windsurf"
+  ],
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "raigo-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.10.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
