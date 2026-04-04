@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "raigo"
+version = "1.0.0"
+description = "Official Python SDK for raigo Cloud — evaluate agent actions against your policies with built-in approval polling."
+readme = "README.md"
+license = { text = "MIT" }
+authors = [{ name = "Periculo Security", email = "hello@raigo.ai" }]
+keywords = ["raigo", "ai-governance", "ai-safety", "policy-engine", "llm", "agent", "human-in-the-loop"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+requires-python = ">=3.9"
+dependencies = [
+    "httpx>=0.25.0",
+]
+
+[project.optional-dependencies]
+async = ["httpx[asyncio]>=0.25.0"]
+dev = ["pytest>=7.0", "pytest-asyncio>=0.21", "respx>=0.20"]
+
+[project.urls]
+Homepage = "https://raigo.ai"
+Repository = "https://github.com/PericuloLimited/raigo"
+Documentation = "https://docs.raigo.ai"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["raigo*"]

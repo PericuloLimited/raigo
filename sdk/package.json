@@ -1,0 +1,41 @@
+{
+  "name": "@raigo/sdk",
+  "version": "1.0.0",
+  "description": "Official TypeScript/JavaScript SDK for raigo Cloud \u2014 evaluate agent actions against your policies with built-in approval polling.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "raigo",
+    "ai-governance",
+    "ai-safety",
+    "policy-engine",
+    "llm",
+    "agent",
+    "human-in-the-loop",
+    "approval"
+  ],
+  "author": "Periculo Security",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PericuloLimited/raigo"
+  },
+  "homepage": "https://raigo.ai",
+  "devDependencies": {
+    "@types/node": "^20.19.39",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

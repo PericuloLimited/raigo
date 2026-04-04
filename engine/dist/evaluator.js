@@ -198,6 +198,7 @@ class RaigoEvaluator {
         }
         const denials = triggered.filter(v => v.action === 'DENY');
         const warnings = triggered.filter(v => v.action === 'WARN');
+        const requiresApproval = denials.some(v => v.require_approval);
         const elapsed = Date.now() - start;
         if (denials.length > 0) {
             const sorted = denials.sort((a, b) => {
@@ -214,6 +215,7 @@ class RaigoEvaluator {
                 evaluation_time_ms: elapsed,
                 policy_version: this.policy.metadata.version,
                 organisation: this.policy.metadata.organisation,
+                requires_approval: requiresApproval || undefined,
             };
         }
         if (warnings.length > 0) {
@@ -465,24 +467,44 @@ class RaigoEvaluator {
     containsExternalContentExecution(text) {
         return EXTERNAL_CONTENT_EXECUTION_PATTERNS.some(p => p.test(text));
     }
+    /**
+     * Normalise a rule action to the canonical DENY/WARN/ALLOW verdict.
+     * - `block` and `ENFORCE` are aliases for `DENY`
+     * - `warn` is an alias for `WARN`
+     * - `allow` is an alias for `ALLOW`
+     * - `require_approval` maps to `DENY` (cloud layer handles the override workflow)
+     */
+    normaliseAction(action) {
+        const a = action.toUpperCase();
+        if (a === 'DENY' || a === 'BLOCK' || a === 'ENFORCE' || a === 'REQUIRE_APPROVAL')
+            return 'DENY';
+        if (a === 'WARN')
+            return 'WARN';
+        if (a === 'ALLOW')
+            return 'ALLOW';
+        return 'DENY'; // safe default
+    }
     buildViolationResponse(rule) {
-        const errorCode = `RAIGO_${rule.action}_${rule.id.replace('-', '')}`;
-        const httpStatus = rule.action === 'DENY' ? 403 : 200;
+        const normalisedAction = this.normaliseAction(rule.action);
+        const isRequireApproval = rule.action === 'require_approval';
+        const errorCode = `RAIGO_${normalisedAction}_${rule.id.replace(/-/g, '_').toUpperCase()}`;
+        const httpStatus = normalisedAction === 'DENY' ? 403 : 200;
         return {
             rule_id: rule.id,
             rule_title: rule.title,
             error_code: errorCode,
             http_status: httpStatus,
-            action: rule.action,
+            action: normalisedAction,
+            require_approval: isRequireApproval || undefined,
             severity: rule.severity,
             user_message: rule.enforcement_message,
-            developer_message: `Policy rule ${rule.id} (${rule.domain}) triggered. Action: ${rule.action}. Severity: ${rule.severity}. Directive: ${rule.directive}\n`,
+            developer_message: `Policy rule ${rule.id} (${rule.domain}) triggered. Action: ${normalisedAction}${isRequireApproval ? ' (require_approval — cloud will create approval record if humanInLoopOnBlock is enabled)' : ''}. Severity: ${rule.severity}. Directive: ${rule.directive}\n`,
             debug_hint: `Review the .raigo policy file and check the condition for rule ${rule.id}. Ensure the input does not contain data matching the trigger conditions.`,
             compliance_mapping: rule.compliance_mapping,
             audit_log: {
                 timestamp: new Date().toISOString(),
                 rule_id: rule.id,
-                action: rule.action,
+                action: normalisedAction,
                 severity: rule.severity,
                 organisation: this.policy.metadata.organisation,
                 policy_suite: this.policy.metadata.policy_suite,

@@ -16,12 +16,26 @@ export interface ComplianceMapping {
     control: string;
     description?: string;
 }
+/**
+ * The action a rule can take when it matches.
+ *
+ * - `block` / `DENY`: Prevent the action. The agent must abort.
+ * - `warn` / `WARN`: Allow the action but surface a warning to the developer.
+ * - `allow` / `ALLOW`: Explicitly permit the action (useful for allow-listing).
+ * - `require_approval`: Treated as `DENY` by the open-source engine.
+ *   When used with raigo Cloud and `humanInLoopOnBlock` enabled, the cloud
+ *   layer creates a human-in-the-loop approval record. The agent polls for
+ *   a decision. If approved, the human has granted a one-time override — the
+ *   audit log still records the original verdict as DENY (human override).
+ *   If denied, the block stands.
+ */
+export type RuleAction = 'block' | 'DENY' | 'warn' | 'WARN' | 'allow' | 'ALLOW' | 'require_approval';
 export interface RaigoPolicy {
     id: string;
     domain: string;
     title: string;
     condition: string | RaigoCondition;
-    action: 'DENY' | 'ENFORCE' | 'WARN';
+    action: RuleAction;
     severity: 'critical' | 'high' | 'medium' | 'low';
     directive: string;
     enforcement_message: string;
@@ -71,6 +85,8 @@ export interface ViolationResponse {
     error_code: string;
     http_status: number;
     action: 'DENY' | 'WARN';
+    /** For require_approval rules: the cloud may create an approval record for this DENY. */
+    require_approval?: boolean;
     severity: string;
     user_message: string;
     developer_message: string;
@@ -96,6 +112,12 @@ export interface EvaluationResult {
     evaluation_time_ms: number;
     policy_version: string;
     organisation: string;
+    /**
+     * Present when action is DENY and the matched rule has action `require_approval`.
+     * When using raigo Cloud with humanInLoopOnBlock enabled, the cloud layer will
+     * create an approval record and return an approvalId for the agent to poll.
+     */
+    requires_approval?: boolean;
 }
 export declare class RaigoEvaluator {
     private policy;
@@ -129,5 +151,13 @@ export declare class RaigoEvaluator {
     private containsDestructiveCommand;
     private containsFinancialAction;
     private containsExternalContentExecution;
+    /**
+     * Normalise a rule action to the canonical DENY/WARN/ALLOW verdict.
+     * - `block` and `ENFORCE` are aliases for `DENY`
+     * - `warn` is an alias for `WARN`
+     * - `allow` is an alias for `ALLOW`
+     * - `require_approval` maps to `DENY` (cloud layer handles the override workflow)
+     */
+    private normaliseAction;
     private buildViolationResponse;
 }
